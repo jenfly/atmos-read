@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import xray
 import collections
+import pandas as pd
 import urllib2
 from bs4 import BeautifulSoup
 
@@ -84,7 +85,8 @@ def merra_urls(dataset='p_monthly'):
             print(years[y])
             dirname = basedir + years[y] + '/'
             files = scrape_url(dirname + 'contents.html')
-            dates = [extract_date(nm, width=6) for nm in sorted(files)]
+            files.sort()
+            dates = [extract_date(nm, width=6) for nm in files]
             for date, nm in zip(dates, files):
                 url_dict[date] = dirname + nm
         return url_dict
@@ -97,7 +99,8 @@ def merra_urls(dataset='p_monthly'):
                 print(years[y] + months[m])
                 dirname = basedir + years[y] + '/' + months[m] + '/'
                 files = scrape_url(dirname + 'contents.html')
-                dates = [extract_date(nm, width=8) for nm in sorted(files)]
+                files.sort()
+                dates = [extract_date(nm, width=8) for nm in files]
                 for date, nm in zip(dates, files):
                     url_dict[date] = dirname + nm
         return url_dict
@@ -115,38 +118,70 @@ def merra_urls(dataset='p_monthly'):
 
 # ----------------------------------------------------------------------
 
-# Make this a new function:
-urls_all = {}
-keys = ['p_monthly', 'sfc_monthly', 'p_daily', 'sfc_daily']
-for key in keys:
-    print('*********************')
-    print(key)
-    urls_all[key] = merra_urls(key)
-    atm.print_odict(urls_all[key])
+def save_urls(filestart='merra_urls_',
+              keys=['p_monthly', 'sfc_monthly', 'p_daily', 'sfc_daily']):
+    """Save lists of MERRA urls."""
 
-# Make this a new function:
-for key in keys:
-    urls = urls_all[key]
-    filename = 'merra_urls_' + key + '.csv'
-    print(filename)
-    with open(filename, 'w') as f:
+    for key in keys:
+        print('*********************\n' + key)
+        filename = filestart + key + '.csv'
+        urls = merra_urls(key)
+        atm.print_odict(urls)
+
+        dates, files = [], []
         for date in urls:
-            f.write(date + ', ' + urls[date] + '\n')
+            dates.append(date)
+            files.append(urls[date])
+
+        df = pd.DataFrame(files, index=pd.Series(dates, name='date'),
+                          columns=['url'])
+
+        print('Writing urls to ' + filename)
+        df.to_csv(filename)
+
+
+def read_urls(filename):
+    """Read urls from csv file and return in a dict."""
+    df = pd.read_csv(filename, index_col=0)
+    col_name = df.columns[0]
+    dates = df.index.values
+    dates = [str(d) for d in dates]
+    files = df[col_name].values
+    files = [str(f) for f in files]
+
+    urls = collections.OrderedDict()
+    for date, file in zip(dates, files):
+        urls[date] = file
+
+    return urls
 
 
 
 # ----------------------------------------------------------------------
 
-# Test the urls that were written to file
-filename = 'merra_urls_p_daily.csv'
-urls_in = []
-with open(filename, 'rU') as f:
-    for line in f:
-        urls_in.append(line.split(', ')[1].replace('\n',''))
-
-url = urls_in[100]
-ds = xray.open_dataset(url)
-print(ds)
+# # Make this a new function:
+# for key in keys:
+#     urls = urls_all[key]
+#     filename = 'merra_urls_' + key + '.csv'
+#     print(filename)
+#     with open(filename, 'w') as f:
+#         for date in urls:
+#             f.write(date + ', ' + urls[date] + '\n')
+#
+#
+#
+# # ----------------------------------------------------------------------
+#
+# # Test the urls that were written to file
+# filename = 'merra_urls_p_daily.csv'
+# urls_in = []
+# with open(filename, 'rU') as f:
+#     for line in f:
+#         urls_in.append(line.split(', ')[1].replace('\n',''))
+#
+# url = urls_in[100]
+# ds = xray.open_dataset(url)
+# print(ds)
 # ----------------------------------------------------------------------
 
 url = ('http://goldsmr3.sci.gsfc.nasa.gov/opendap/MERRA_MONTHLY/'
