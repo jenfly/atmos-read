@@ -5,6 +5,8 @@ import pandas as pd
 import urllib2
 from bs4 import BeautifulSoup
 
+import sys
+sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 import atmos as atm
 
 # ----------------------------------------------------------------------
@@ -30,7 +32,9 @@ def varname(var):
 
 
 # ----------------------------------------------------------------------
-def load_daily(year, month, var_id, concat_dim='TIME', verbose=True):
+def load_daily(year, month, var_id, concat_dim='TIME',
+               subset1=(None, None, None), subset2=(None, None, None),
+               verbose=True):
     """Return daily data for selected year and month for a single variable.
 
     Parameters
@@ -41,6 +45,15 @@ def load_daily(year, month, var_id, concat_dim='TIME', verbose=True):
         Variable ID.
     concat_dim : str, optional
         Name of dimension for concatenation.
+    subset1, subset2 : (str, float(s), float(s)), optional
+        Tuple to indicate subset(s) to extract, in the form:
+        (dim_name, lower_or_list, upper)
+        e.g. subset1 = ('lon', 0, 120)
+             subset2 = ('lat', -45, 45)
+        e.g. subset1 = ('plev', 200, 200)
+        The dimension name can be the actual dimension name
+        (e.g. 'XDim') or a generic name (e.g. 'lon') and get_coord()
+        is called to find the specific name.
     verbose : bool, optional
         If True, print updates while processing files.
 
@@ -61,7 +74,7 @@ def load_daily(year, month, var_id, concat_dim='TIME', verbose=True):
 
     paths = [urls[key] for key in urls.keys() if date in key]
 
-    data = atm.load_concat(paths, var, concat_dim, verbose)
+    data = atm.load_concat(paths, var, concat_dim, subset1, subset2, verbose)
     return data
 
 
