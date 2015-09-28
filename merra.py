@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import xray
 import collections
 import pandas as pd
@@ -8,7 +7,62 @@ from bs4 import BeautifulSoup
 
 import atmos as atm
 
+# ----------------------------------------------------------------------
+def varname(var):
+    """Return the variable name in MERRA data file.
 
+    Parameters
+    ----------
+    var : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
+    """
+
+    var_dict = {'u' : 'U',
+                'v' : 'V',
+                'omega' : 'OMEGA',
+                'hgt' : 'H',
+                'T' : 'T',
+                'q' : 'QV',
+                'ps' : 'PS',
+                'evap' : 'EVAP',
+                'precip' : 'PRECTOT'}
+
+    return var_dict[var]
+
+
+# ----------------------------------------------------------------------
+def load_daily(year, month, var_id, concat_dim='TIME', verbose=True):
+    """Return daily data for selected year and month for a single variable.
+
+    Parameters
+    ----------
+    year, month : int
+        Numeric year and month (1-12).
+    var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
+        Variable ID.
+    concat_dim : str, optional
+        Name of dimension for concatenation.
+    verbose : bool, optional
+        If True, print updates while processing files.
+
+    Returns
+    -------
+    data : xray.DataArray
+        Daily data (3-hourly or hourly) for the month.
+    """
+
+    var = varname(var_id)
+    date = '%d%02d' % (year, month)
+
+    if var_id in ['evap', 'precip']:
+        dataset = 'sfc_daily'
+    else:
+        dataset = 'p_daily'
+    urls = url_list(dataset)
+
+    paths = [urls[key] for key in urls.keys() if date in key]
+
+    data = atm.load_concat(paths, var, concat_dim, verbose)
+    return data
 
 
 # ======================================================================
