@@ -28,7 +28,10 @@ def varname(var):
                 'evap' : 'EVAP',
                 'precip' : 'PRECTOT'}
 
-    return var_dict[var]
+    if var in var_dict:
+        return var_dict[var]
+    else:
+        return var
 
 
 # ----------------------------------------------------------------------
@@ -41,8 +44,11 @@ def load_daily(year, month, var_id, concat_dim='TIME',
     ----------
     year, month : int
         Numeric year and month (1-12).
-    var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
-        Variable ID.
+    var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'},
+             or str
+        Variable ID.  Can be generic ID from the list above, in which
+        case varname() is called to get the specific ID for MERRA. Or
+        var_id can be the exact name as it appears in MERRA data files.
     concat_dim : str, optional
         Name of dimension for concatenation.
     subset1, subset2 : (str, float(s), float(s)), optional
@@ -77,6 +83,12 @@ def load_daily(year, month, var_id, concat_dim='TIME',
     data = atm.load_concat(paths, var, concat_dim, subset1, subset2, verbose)
     return data
 
+
+# ----------------------------------------------------------------------
+def monthly_from_daily():
+    """Return the monthly mean of daily data.
+
+    """
 
 # ======================================================================
 # Lists of OpenDAP urls for data files
