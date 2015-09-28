@@ -9,6 +9,53 @@ from bs4 import BeautifulSoup
 import atmos as atm
 
 
+
+
+# ======================================================================
+# Lists of OpenDAP urls for data files
+# ======================================================================
+
+# ----------------------------------------------------------------------
+def url_list(dataset):
+    """Return list of OpenDAP urls for MERRA data files.
+
+    This function reads a .csv file with a list of urls previously
+    scraped from the MERRA website with merra_urls() and saved with
+    save_urls().
+
+    Parameters
+    ----------
+    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily'} or string
+        If dataset is in the list above, then csv file is assumed to be
+        data/merra_urls_dataset.csv.  If not in the list above, then
+        dataset should be the path of the csv file to read.
+
+    Returns
+    -------
+    urls : OrderedDict()
+        Dict of date:url pairs.
+    """
+
+    if dataset in ['p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily']:
+        filename = 'data/merra_urls_' + dataset + '.csv'
+    else:
+        filename = dataset
+
+    df = pd.read_csv(filename, index_col=0)
+    col_name = df.columns[0]
+    dates = df.index.values
+    dates = [str(d) for d in dates]
+    files = df[col_name].values
+    files = [str(f) for f in files]
+
+    urls = collections.OrderedDict()
+    for date, file in zip(dates, files):
+        urls[date] = file
+
+    return urls
+
+
+# ----------------------------------------------------------------------
 def scrape_url(url, ending='.hdf.html', cut='.html'):
     """Scrape url for links with specified ending string."""
 
@@ -22,11 +69,13 @@ def scrape_url(url, ending='.hdf.html', cut='.html'):
     return links
 
 
+# ----------------------------------------------------------------------
 def extract_date(filename, width, ending='.hdf'):
     """Extract yyyymmdd or yyyymm from file name."""
     s = filename.split(ending)[0]
     date = s[-width:]
     return date
+
 
 # ----------------------------------------------------------------------
 def merra_urls(dataset='p_monthly'):
@@ -34,7 +83,7 @@ def merra_urls(dataset='p_monthly'):
 
     Parameters
     ----------
-    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', sfc_daily}
+    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily'}
 
     Returns
     -------
@@ -117,8 +166,7 @@ def merra_urls(dataset='p_monthly'):
 
 
 # ----------------------------------------------------------------------
-
-def save_urls(filestart='merra_urls_',
+def save_urls(filestart='data/merra_urls_',
               keys=['p_monthly', 'sfc_monthly', 'p_daily', 'sfc_daily']):
     """Save lists of MERRA urls."""
 
@@ -138,102 +186,3 @@ def save_urls(filestart='merra_urls_',
 
         print('Writing urls to ' + filename)
         df.to_csv(filename)
-
-
-def read_urls(filename):
-    """Read urls from csv file and return in a dict."""
-    df = pd.read_csv(filename, index_col=0)
-    col_name = df.columns[0]
-    dates = df.index.values
-    dates = [str(d) for d in dates]
-    files = df[col_name].values
-    files = [str(f) for f in files]
-
-    urls = collections.OrderedDict()
-    for date, file in zip(dates, files):
-        urls[date] = file
-
-    return urls
-
-
-
-# ----------------------------------------------------------------------
-
-# # Make this a new function:
-# for key in keys:
-#     urls = urls_all[key]
-#     filename = 'merra_urls_' + key + '.csv'
-#     print(filename)
-#     with open(filename, 'w') as f:
-#         for date in urls:
-#             f.write(date + ', ' + urls[date] + '\n')
-#
-#
-#
-# # ----------------------------------------------------------------------
-#
-# # Test the urls that were written to file
-# filename = 'merra_urls_p_daily.csv'
-# urls_in = []
-# with open(filename, 'rU') as f:
-#     for line in f:
-#         urls_in.append(line.split(', ')[1].replace('\n',''))
-#
-# url = urls_in[100]
-# ds = xray.open_dataset(url)
-# print(ds)
-# ----------------------------------------------------------------------
-
-url = ('http://goldsmr3.sci.gsfc.nasa.gov/opendap/MERRA_MONTHLY/'
-    'MAIMCPASM.5.2.0/1979/MERRA100.prod.assim.instM_3d_asm_Cp.197907.hdf')
-
-url2 = ('http://goldsmr2.sci.gsfc.nasa.gov/opendap/MERRA_MONTHLY/'
-    'MATMNXFLX.5.2.0/1979/MERRA100.prod.assim.tavgM_2d_flx_Nx.197907.hdf')
-
-ds = xray.open_dataset(url)
-ds2 = xray.open_dataset(url2)
-
-u = ds['U']
-v = ds['V']
-q = ds['QV']
-lat = get_coord(u, 'lat')
-lon = get_coord(u, 'lon')
-plev = get_coord(u, 'plev')
-
-# Convert from (kg/m^2)/s to mm/day
-SCALE = 60 * 60 * 24
-
-precip = ds2['PRECTOT'] * SCALE
-evap = ds2['EVAP'] * SCALE
-
-mfc = av.moisture_flux_conv(u*q, v*q)
-
-lon1, lon2 = 0, 150
-lat1, lat2 = 0, 50
-axlims = (lat1, lat2, lon1, lon2)
-
-plt.figure(figsize=(7,8))
-plt.subplot(211)
-ap.pcolor_latlon(precip, cmap='hot_r', axlims=axlims)
-plt.title('Total precip')
-plt.subplot(212)
-ap.pcolor_latlon(evap, cmap='hot_r', axlims=axlims)
-plt.title('Evap')
-
-plt.figure(figsize=(7,8))
-plt.subplot(211)
-ap.pcolor_latlon(precip - evap, axlims=axlims)
-plt.title('Net precip')
-plt.subplot(212)
-ap.pcolor_latlon(mfc, axlims=axlims)
-plt.title('MFC')
-
-# ----------------------------------------------------------------------
-# Sub-daily data (3-hourly and hourly for surface fluxes)
-
-# Hourly precip
-# url3 = ('http://goldsmr2.sci.gsfc.nasa.gov/opendap/MERRA/MAT1NXFLX.5.2.0/'
-#     '1979/07/MERRA100.prod.assim.tavg1_2d_flx_Nx.19790701.hdf')
-# ds3 = xray.open_dataset(url3)
-#
-# precip = ds3['PRECTOT']
