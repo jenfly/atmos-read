@@ -10,12 +10,12 @@ sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 import atmos as atm
 
 # ----------------------------------------------------------------------
-def varname(var):
+def varname(var_id):
     """Return the variable name in MERRA data file.
 
     Parameters
     ----------
-    var : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
+    var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
     """
 
     var_dict = {'u' : 'U',
@@ -28,10 +28,71 @@ def varname(var):
                 'evap' : 'EVAP',
                 'precip' : 'PRECTOT'}
 
-    if var in var_dict:
-        return var_dict[var]
+    if var_id in var_dict:
+        return var_dict[var_id]
     else:
         return var
+
+
+# ----------------------------------------------------------------------
+def get_dataset(var_id, time_res='daily', default='p'):
+    """Return the dataset ID corresponding to the variable.
+
+    Parameters
+    ----------
+    var_id : str
+        Variable name.  Can be a generic ID as input to varname(), or
+        a specific name from MERRA data files.
+    time_res : {'daily', 'monthly'}
+        Time resolution of dataset.
+    default : {'p', 'sfc'}
+        If the variable is in both pressure-level and surface flux
+        data, then default to this dataset type.
+
+    Returns
+    -------
+    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily'}
+        Name of the dataset containing the variable (pressure-level
+        or surface fluxes), at the specified time resolution.
+    """
+
+    var = varname(var_id)
+
+    p_vars = [u'SLP', u'PS', u'PHIS', u'H', u'O3', u'QV', u'QL', u'QI', u'RH',
+              u'T', u'U', u'V', u'EPV', u'OMEGA', u'Cov_U_V', u'Cov_U_T',
+              u'Cov_V_T', u'Cov_U_H', u'Cov_V_H', u'Cov_U_QV', u'Cov_V_QV',
+              u'Cov_U_QL', u'Cov_V_QL', u'Cov_U_QI', u'Cov_V_QI', u'Cov_U_EPV',
+              u'Cov_V_EPV', u'Cov_U_O3', u'Cov_V_O3', u'Cov_OMEGA_U',
+              u'Cov_OMEGA_V', u'Cov_OMEGA_T', u'Cov_OMEGA_QV', u'Cov_OMEGA_QL',
+              u'Cov_OMEGA_QI', u'Cov_OMEGA_O3', u'vsts', u'Var_SLP', u'Var_PS',
+              u'Var_PHIS', u'Var_H', u'Var_O3', u'Var_QV', u'Var_QL', u'Var_QI',
+              u'Var_RH', u'Var_T', u'Var_U', u'Var_V', u'Var_EPV', u'Var_OMEGA']
+
+    sfc_vars = [u'EFLUX', u'EVAP', u'HFLUX', u'TAUX', u'TAUY', u'TAUGWX',
+                u'TAUGWY', u'PBLH', u'DISPH', u'BSTAR', u'USTAR', u'TSTAR',
+                u'QSTAR', u'RI', u'Z0H', u'Z0M', u'HLML', u'TLML', u'QLML',
+                u'ULML', u'VLML', u'RHOA', u'SPEED', u'CDH', u'CDQ', u'CDM',
+                u'CN', u'TSH', u'QSH', u'FRSEAICE', u'PRECANV', u'PRECCON',
+                u'PRECLSC', u'PRECSNO', u'PRECTOT', u'PGENTOT', u'Var_EFLUX',
+                u'Var_EVAP', u'Var_HFLUX', u'Var_TAUX', u'Var_TAUY',
+                u'Var_TAUGWX', u'Var_TAUGWY', u'Var_PBLH', u'Var_DISPH',
+                u'Var_BSTAR', u'Var_USTAR', u'Var_TSTAR', u'Var_QSTAR',
+                u'Var_RI', u'Var_Z0H', u'Var_Z0M', u'Var_HLML', u'Var_TLML',
+                u'Var_QLML', u'Var_ULML', u'Var_VLML', u'Var_RHOA',
+                u'Var_SPEED', u'Var_CDH', u'Var_CDQ', u'Var_CDM', u'Var_CN',
+                u'Var_TSH', u'Var_QSH', u'Var_PRECANV', u'Var_PRECCON',
+                u'Var_PRECLSC', u'Var_PRECSNO', u'Var_PRECTOT', u'Var_PGENTOT']
+
+    if var in p_vars and var in sfc_vars:
+        dataset = default + '_' + time_res
+    elif var in p_vars:
+        dataset = 'p_' + time_res
+    elif var in sfc_vars:
+        dataset = 'sfc_' + time_res
+    else:
+        raise ValueError('var_id ' + var_id + ' not found.')
+
+    return dataset
 
 
 # ----------------------------------------------------------------------
@@ -69,13 +130,14 @@ def load_daily(year, month, var_id, concat_dim='TIME',
         Daily data (3-hourly or hourly) for the month.
     """
 
-    var = varname(var_id)
+    #var = varname(var_id)
     date = '%d%02d' % (year, month)
 
-    if var_id in ['evap', 'precip']:
-        dataset = 'sfc_daily'
-    else:
-        dataset = 'p_daily'
+    # if var_id in ['evap', 'precip']:
+    #     dataset = 'sfc_daily'
+    # else:
+    #     dataset = 'p_daily'
+    dataset = get_dataset(var, )
     urls = url_list(dataset)
 
     paths = [urls[key] for key in urls.keys() if date in key]
@@ -85,7 +147,8 @@ def load_daily(year, month, var_id, concat_dim='TIME',
 
 
 # ----------------------------------------------------------------------
-def monthly_from_daily():
+def monthly_from_daily(year, month, var_id_a, var_id_b=None, concat_dim='TIME',
+                       verbose=True):
     """Return the monthly mean of daily data.
 
     """
