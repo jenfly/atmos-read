@@ -1,3 +1,4 @@
 *.pyc
 *~
 *.log
+atmos-read/testing/log
