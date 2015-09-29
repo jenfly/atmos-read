@@ -7,7 +7,10 @@ import merra
 import atmos as atm
 
 def filename(varname, datestr):
-    return 'home/jwalker/datastore/merra/scratch/' + varname + datestr
+    savedir = '/net/eady/data1/jwalker/datastore/merra/monthly/'
+    filen = savedir + varname + datestr
+    print('Saving to ' + filen)
+    return filen
 
 year = 1979
 month = 1
