@@ -7,6 +7,23 @@ import urllib2
 from bs4 import BeautifulSoup
 
 import atmos as atm
+import merra
+
+# ----------------------------------------------------------------------
+# Save 200mb u, v daily data for one month
+year = 1979
+month = 1
+datestr = '%d%02d' % (year, month)
+savedir = '/home/jennifer/datastore/merra/daily/'
+
+def filename(varname, datestr, savedir):
+    return savedir + 'merra_' + varname + '_' + datestr + '.nc'
+
+u = merra.load_daily(year, month, 'u', subset1=('plev', 200, 200))
+atm.save_nc(filename('u200', datestr, savedir), u)
+
+v = merra.load_daily(year, month, 'v', subset1=('plev', 200, 200))
+atm.save_nc(filename('v200', datestr, savedir), v)
 
 # ----------------------------------------------------------------------
 

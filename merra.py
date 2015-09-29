@@ -206,6 +206,7 @@ def monthly_from_daily(year, month, var_id_a, var_id_b=None, concat_dim='TIME',
             b = load_daily(year, month, var_id_b, concat_dim=concat_dim,
                            subset1=subset1, verbose=verbose)
             ab = a * b
+            ab.name = get_varname(var_id_a) + '_times_' + get_varname(var_id_b)
             if k == 0:
                 b_bar = b.mean(dim=concat_dim)
                 ab_bar = ab.mean(dim=concat_dim)
