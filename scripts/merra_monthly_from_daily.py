@@ -7,14 +7,24 @@ import merra
 import atmos as atm
 
 def filename(varname, datestr):
-    nm = '/home/jwalker/datastore/merra/monthly/' + varname + datestr
+    nm = '~/datastore/merra/monthly/' + varname + datestr
     print('Saving to ' + nm)
     return nm
+
+flux_vars = ['u', 'q', 'T', 'hgt']
+noflux_vars = ['v', 'omega', 'ps']
 
 for year in [1979]:
     for month in range(1, 13):
         datestr = '_%d%02d.nc' % (year, month)
-        u, v, uv = merra.monthly_from_daily(year, month, 'u', 'v')
-        atm.save_nc(filename('u', datestr), u)
-        atm.save_nc(filename('u', datestr), v)
-        atm.save_nc(filename('uv', datestr), uv)
+
+        for var in flux_vars:
+            print('*******' + var + '*********')
+            var, u_var, v_var = merra.monthly_from_daily(year, month, var,
+                                                         fluxes=True)
+            atm.save_nc(filename(var + '_fluxes', datestr), var, u_var, v_var)
+
+        for var in noflux_vars:
+            print('*******' + var + '*********')
+            var  = merra.monthly_from_daily(year, month, var, fluxes=False)
+            atm.save_nc(filename(var, datestr), var)
