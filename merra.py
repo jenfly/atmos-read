@@ -8,9 +8,10 @@ from bs4 import BeautifulSoup
 import sys
 sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 import atmos as atm
+from atmos import print_if
 
 # ----------------------------------------------------------------------
-def varname(var_id):
+def get_varname(var_id):
     """Return the variable name in MERRA data file.
 
     Parameters
@@ -41,8 +42,8 @@ def get_dataset(var_id, time_res='daily', default='p'):
     Parameters
     ----------
     var_id : str
-        Variable name.  Can be a generic ID as input to varname(), or
-        a specific name from MERRA data files.
+        Variable name.  Can be a generic ID as input to get_varname(),
+        or a specific name from MERRA data files.
     time_res : {'daily', 'monthly'}
         Time resolution of dataset.
     default : {'p', 'sfc'}
@@ -56,7 +57,7 @@ def get_dataset(var_id, time_res='daily', default='p'):
         or surface fluxes), at the specified time resolution.
     """
 
-    var = varname(var_id)
+    var = get_varname(var_id)
 
     p_vars = [u'SLP', u'PS', u'PHIS', u'H', u'O3', u'QV', u'QL', u'QI', u'RH',
               u'T', u'U', u'V', u'EPV', u'OMEGA', u'Cov_U_V', u'Cov_U_T',
@@ -108,7 +109,7 @@ def load_daily(year, month, var_id, concat_dim='TIME',
     var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'},
              or str
         Variable ID.  Can be generic ID from the list above, in which
-        case varname() is called to get the specific ID for MERRA. Or
+        case get_varname() is called to get the specific ID for MERRA. Or
         var_id can be the exact name as it appears in MERRA data files.
     concat_dim : str, optional
         Name of dimension for concatenation.
@@ -130,14 +131,9 @@ def load_daily(year, month, var_id, concat_dim='TIME',
         Daily data (3-hourly or hourly) for the month.
     """
 
-    #var = varname(var_id)
+    var = get_varname(var_id)
     date = '%d%02d' % (year, month)
-
-    # if var_id in ['evap', 'precip']:
-    #     dataset = 'sfc_daily'
-    # else:
-    #     dataset = 'p_daily'
-    dataset = get_dataset(var, )
+    dataset = get_dataset(var_id, 'daily')
     urls = url_list(dataset)
 
     paths = [urls[key] for key in urls.keys() if date in key]
@@ -151,14 +147,84 @@ def monthly_from_daily(year, month, var_id_a, var_id_b=None, concat_dim='TIME',
                        verbose=True):
     """Return the monthly mean of daily data.
 
+    Parameters
+    ----------
+    year, month : int
+        Numeric year and month (1-12).
+    var_id_a, var_id_b : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps',
+                          'evap', 'precip'},  or str
+        Variable IDs.  Can be generic ID from the list above, in which
+        case get_varname() is called to get the specific ID for MERRA. Or
+        var_id can be the exact name as it appears in MERRA data files.
+    concat_dim : str, optional
+        Name of dimension for concatenation.
+    verbose : bool, optional
+        If True, print updates while processing files.
+
+    Returns
+    -------
+    a_bar[, b_bar, ab_bar] : xray.DataArray(s)
+        Mean of daily data for variable a, variable b (if applicable),
+        and a * b (if applicable).
+
+    Examples
+    --------
+    ubar = monthly_from_daily(1979, 1, 'u')
+    ubar, vbar, uvbar = monthly_from_daily(1979, 1, 'u', 'v')
     """
+
+    # Read metadata from one file to get pressure-level array
+    dataset = get_dataset(var_id_a, 'daily')
+    if dataset.startswith('p_'):
+        url = url_list(dataset, return_dict=False)[0]
+        ds = xray.open_dataset(url)
+        pname = atm.get_coord(ds, 'plev', 'name')
+        plev = atm.get_coord(ds, 'plev')
+        ds.close()
+        scale1, scale2 = 0.9999, 1.0001
+    else:
+        plev = [np.nan]
+
+    # Iterate over vertical levels
+    for k, p in enumerate(plev):
+        if np.isnan(p):
+            subset1 = (None, None, None)
+            print_if('Surface data', verbose)
+        else:
+            subset1 = (pname, p * scale1, p * scale2)
+            print_if('Pressure-level %.1f' % p, verbose)
+
+        a = load_daily(year, month, var_id_a, concat_dim=concat_dim,
+                       subset1=subset1, verbose=verbose)
+
+        if k == 0:
+            a_bar = a.mean(dim=concat_dim)
+        else:
+            a_bar = xray.concat([a_bar, a.mean(dim=concat_dim)], dim=pname)
+
+        if var_id_b is not None:
+            b = load_daily(year, month, var_id_b, concat_dim=concat_dim,
+                           subset1=subset1, verbose=verbose)
+            ab = a * b
+            if k == 0:
+                b_bar = b.mean(dim=concat_dim)
+                ab_bar = ab.mean(dim=concat_dim)
+            else:
+                b_bar = xray.concat([b_bar, b.mean(dim=concat_dim)], dim=pname)
+                ab_bar = xray.concat([ab_bar, ab.mean(dim=concat_dim)],
+                                      dim=pname)
+
+    if var_id_b is None:
+        return a_bar
+    else:
+        return a_bar, b_bar, ab_bar
 
 # ======================================================================
 # Lists of OpenDAP urls for data files
 # ======================================================================
 
 # ----------------------------------------------------------------------
-def url_list(dataset):
+def url_list(dataset, return_dict=True):
     """Return list of OpenDAP urls for MERRA data files.
 
     This function reads a .csv file with a list of urls previously
@@ -171,11 +237,14 @@ def url_list(dataset):
         If dataset is in the list above, then csv file is assumed to be
         data/merra_urls_dataset.csv.  If not in the list above, then
         dataset should be the path of the csv file to read.
+    return_dict : bool, optional
+        If True, then return the urls in an OrderedDict of date:url
+        pairs.  If False, then return urls as a list.
 
     Returns
     -------
-    urls : OrderedDict()
-        Dict of date:url pairs.
+    urls : OrderedDict() or list
+        Dict of date:url pairs or list of urls.
     """
 
     if dataset in ['p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily']:
@@ -190,9 +259,12 @@ def url_list(dataset):
     files = df[col_name].values
     files = [str(f) for f in files]
 
-    urls = collections.OrderedDict()
-    for date, file in zip(dates, files):
-        urls[date] = file
+    if return_dict:
+        urls = collections.OrderedDict()
+        for date, file in zip(dates, files):
+            urls[date] = file
+    else:
+        urls = files
 
     return urls
 
