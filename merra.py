@@ -182,19 +182,42 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
 
     (u_nm, v_nm) = fluxvars
 
+    # Extended variables (calculated from others)
+    ext_vars = {'theta' : {'var_id0' : 'T',
+                           'var_id1' : None},
+                'theta_e' : {'var_id0' : 'T',
+                             'var_id1' : 'q'}}
+
+    if var_id in ext_vars:
+        var_id0 = ext_vars[var_id]['var_id0']
+        var_id1 = ext_vars[var_id]['var_id1']
+    else:
+        var_id0, var_id1 = var_id, None
+
+
     # Read metadata from one file to get pressure-level array
-    dataset = get_dataset(var_id, 'daily')
+    dataset = get_dataset(var_id0, 'daily')
     if dataset.startswith('p_'):
         url = url_list(dataset, return_dict=False)[0]
         ds = xray.open_dataset(url)
         pname = atm.get_coord(ds, 'plev', 'name')
         plev = atm.get_coord(ds, 'plev')
+        # Pressure levels in Pa for theta/theta_e calcs
+        p_units = atm.pres_units(ds[pname].units)
+        pres = atm.pres_convert(plev, p_units, 'Pa')
         ds.close()
         scale1, scale2 = 0.9999, 1.0001
     else:
         plev = [np.nan]
         if fluxes:
             raise ValueError('Fluxes cannot be calculated for surface data.')
+
+    # Get daily data (raw or calculate extended variables)
+    def get_data(year, month, var_id, concat_dim, subset1, verbose):
+        if var_id.lower().startswith('theta'):
+            print('theta')
+            #T =
+
 
     # Iterate over vertical levels
     for k, p in enumerate(plev):
@@ -207,9 +230,11 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
 
         var = load_daily(year, month, var_id, concat_dim=concat_dim,
                        subset1=subset1, verbose=verbose)
+        _, attrs, _ = atm.meta(var)
 
         if k == 0:
             var_bar = var.mean(dim=concat_dim)
+            var_bar.attrs = attrs
         else:
             var_bar = xray.concat([var_bar, var.mean(dim=concat_dim)],
                                   dim=pname)
@@ -220,12 +245,15 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             v = load_daily(year, month, v_nm, concat_dim=concat_dim,
                            subset1=subset1, verbose=verbose)
             u_var = u * var
-            u_var.name = get_varname(u_nm) + '_times_' +  get_varname(var_id)
+            u_var.name = get_varname(u_nm) + '_*_' +  get_varname(var_id)
             v_var = v * var
-            v_var.name = get_varname(v_nm) + '_times_' +  get_varname(var_id)
+            v_var.name = get_varname(v_nm) + '_*_' +  get_varname(var_id)
             if k == 0:
                 u_var_bar = u_var.mean(dim=concat_dim)
                 v_var_bar = v_var.mean(dim=concat_dim)
+                units = var_bar.attrs['units'] + ' * ' + u.attrs['units']
+                u_var_bar.attrs['units'] = units
+                v_var_bar.attrs['units'] = units
             else:
                 u_var_bar = xray.concat([u_var_bar, u_var.mean(dim=concat_dim)],
                                         dim=pname)
