@@ -240,7 +240,7 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             subset1 = (pname, p * scale1, p * scale2)
             print_if('Pressure-level %.1f' % p, verbose)
 
-        var = get_data(var_id, var_id0, var_id1, pres, year, month, concat_dim,
+        var = get_data(var_id, var_id0, var_id1, pres[k], year, month, concat_dim,
                        subset1, verbose)
         # var = load_daily(year, month, var_id, concat_dim=concat_dim,
         #                subset1=subset1, verbose=verbose)
