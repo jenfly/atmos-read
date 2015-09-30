@@ -13,7 +13,7 @@ savedir = '/home/jennifer/datastore/merra/daily/'
 def filename(varname, datestr, savedir):
     return savedir + 'merra_' + varname + '_' + datestr + '.nc'
 
-for year in range(1980, 2015):
+for year in range(1983, 1986):
     for month in range(1, 13):
 
         datestr = '%d%02d' % (year, month)

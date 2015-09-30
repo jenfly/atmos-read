@@ -22,7 +22,7 @@ for year in [1979]:
             print('*******' + var + '*********')
             var, u_var, v_var = merra.monthly_from_daily(year, month, var,
                                                          fluxes=True)
-            atm.save_nc(filename(var + '_fluxes', datestr), var, u_var, v_var)
+            atm.save_nc(filename(var + '_flx', datestr), var, u_var, v_var)
 
         for var in noflux_vars:
             print('*******' + var + '*********')
