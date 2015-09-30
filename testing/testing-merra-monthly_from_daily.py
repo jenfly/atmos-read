@@ -22,9 +22,9 @@ precip = merra.monthly_from_daily(year, month, 'precip')
 atm.save_nc(filename('precip', datestr), precip)
 
 # One variable, pressure-level
-u = merra.monthly_from_daily(year, month, 'u')
-atm.save_nc(filename('u', datestr), u)
+T = merra.monthly_from_daily(year, month, 'T')
+atm.save_nc(filename('T', datestr), T)
 
 # Variable and fluxes, pressure-level
 q, uq, vq = merra.monthly_from_daily(year, month, 'q', fluxes=True)
-atm.save_nc(filename('q_fluxes', datestr), q, uq, vq)
+atm.save_nc(filename('q_flx', datestr), q, uq, vq)

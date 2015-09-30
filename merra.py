@@ -189,8 +189,8 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
                              'var_id1' : 'q'}}
 
     if var_id in ext_vars:
-        var_id0 = ext_vars[var_id]['var_id0']
-        var_id1 = ext_vars[var_id]['var_id1']
+        var_id0 = ext_vars[var_id.lower()]['var_id0']
+        var_id1 = ext_vars[var_id.lower()]['var_id1']
     else:
         var_id0, var_id1 = var_id, None
 
@@ -209,15 +209,27 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
         scale1, scale2 = 0.9999, 1.0001
     else:
         plev = [np.nan]
+        pres = None
         if fluxes:
             raise ValueError('Fluxes cannot be calculated for surface data.')
 
     # Get daily data (raw or calculate extended variables)
-    def get_data(year, month, var_id, concat_dim, subset1, verbose):
-        if var_id.lower().startswith('theta'):
-            print('theta')
-            #T =
-
+    def get_data(var_id, var_id0, var_id1, pres, year, month, concat_dim,
+                 subset1, verbose):
+        var0 = load_daily(year, month, var_id0, concat_dim=concat_dim,
+                          subset1=subset1, verbose=verbose)
+        if var_id1 is not None:
+            var1 = load_daily(year, month, var_id1, concat_dim=concat_dim,
+                              subset1=subset1, verbose=verbose)
+        if var_id == var_id0:
+            var = var0
+        elif var_id.lower() == 'theta':
+            var = atm.potential_temp(var0, pres)
+        elif var_id.lower() == 'theta_e':
+            var = atm.equiv_potential_temp(var0, pres, var1)
+        else:
+            raise ValueError('Invalid var_id ' + var_id)
+        return var
 
     # Iterate over vertical levels
     for k, p in enumerate(plev):
@@ -228,8 +240,10 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             subset1 = (pname, p * scale1, p * scale2)
             print_if('Pressure-level %.1f' % p, verbose)
 
-        var = load_daily(year, month, var_id, concat_dim=concat_dim,
-                       subset1=subset1, verbose=verbose)
+        var = get_data(var_id, var_id0, var_id1, pres, year, month, concat_dim,
+                       subset1, verbose)
+        # var = load_daily(year, month, var_id, concat_dim=concat_dim,
+        #                subset1=subset1, verbose=verbose)
         _, attrs, _ = atm.meta(var)
 
         if k == 0:
