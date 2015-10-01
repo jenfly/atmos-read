@@ -257,9 +257,9 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             v = load_daily(year, month, v_nm, concat_dim=concat_dim,
                            subset1=subset1, verbose=verbose)
             u_var = u * var
-            u_var.name = get_varname(u_nm) + '_*_' +  var_bar.name
+            u_var.name = get_varname(u_nm) + '*' +  var_bar.name
             v_var = v * var
-            v_var.name = get_varname(v_nm) + '_*_' +  var_bar.name
+            v_var.name = get_varname(v_nm) + '*' +  var_bar.name
             if k == 0:
                 u_var_bar = u_var.mean(dim=concat_dim)
                 v_var_bar = v_var.mean(dim=concat_dim)
