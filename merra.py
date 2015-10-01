@@ -229,7 +229,6 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             var = atm.equiv_potential_temp(var0, pres, var1)
         else:
             raise ValueError('Invalid var_id ' + var_id)
-        var.name = var_id
         return var
 
     # Iterate over vertical levels
