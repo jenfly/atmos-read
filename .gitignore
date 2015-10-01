@@ -1,5 +1,6 @@
 *.pyc
 *~
 *.log
-atmos-read/testing/log
+testing/log
 *.o*
+run*
