@@ -2,3 +2,4 @@
 *~
 *.log
 atmos-read/testing/log
+*.o*

@@ -8,20 +8,22 @@ import atmos as atm
 
 # ----------------------------------------------------------------------
 # Save 200mb u, v daily data for each month
-savedir = '/home/jennifer/datastore/merra/daily/'
+savedir = '/net/eady/data1/jwalker/datastore/merra/daily/'
 
 def filename(varname, datestr, savedir):
     filen = savedir + 'merra_' + varname + '_' + datestr + '.nc'
     print('Saving to ' + filen)
     return filen
 
-for year in range(1983, 1986):
-    for month in range(1, 13):
+# for year in range(1991, 1996):
+#     for month in range(1, 13):
 
+for year in [1991]:
+    for month in range(4, 13):
         datestr = '%d%02d' % (year, month)
 
         u = merra.load_daily(year, month, 'u', subset1=('plev', 200, 200))
         atm.save_nc(filename('u200', datestr, savedir), u)
 
-        v = merra.load_daily(year, month, 'v', subset1=('plev', 200, 200))
-        atm.save_nc(filename('v200', datestr, savedir), v)
+        # v = merra.load_daily(year, month, 'v', subset1=('plev', 200, 200))
+        # atm.save_nc(filename('v200', datestr, savedir), v)
