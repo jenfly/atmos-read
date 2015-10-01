@@ -32,7 +32,7 @@ def get_varname(var_id):
     if var_id in var_dict:
         return var_dict[var_id]
     else:
-        return var
+        return var_id
 
 
 # ----------------------------------------------------------------------
@@ -229,6 +229,7 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             var = atm.equiv_potential_temp(var0, pres, var1)
         else:
             raise ValueError('Invalid var_id ' + var_id)
+        var.name = var_id
         return var
 
     # Iterate over vertical levels
@@ -240,10 +241,8 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             subset1 = (pname, p * scale1, p * scale2)
             print_if('Pressure-level %.1f' % p, verbose)
 
-        var = get_data(var_id, var_id0, var_id1, pres[k], year, month, concat_dim,
-                       subset1, verbose)
-        # var = load_daily(year, month, var_id, concat_dim=concat_dim,
-        #                subset1=subset1, verbose=verbose)
+        var = get_data(var_id, var_id0, var_id1, pres[k], year, month,
+                       concat_dim, subset1, verbose)
         _, attrs, _ = atm.meta(var)
 
         if k == 0:
@@ -259,9 +258,9 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
             v = load_daily(year, month, v_nm, concat_dim=concat_dim,
                            subset1=subset1, verbose=verbose)
             u_var = u * var
-            u_var.name = get_varname(u_nm) + '_*_' +  get_varname(var_id)
+            u_var.name = get_varname(u_nm) + '_*_' +  var_bar.name
             v_var = v * var
-            v_var.name = get_varname(v_nm) + '_*_' +  get_varname(var_id)
+            v_var.name = get_varname(v_nm) + '_*_' +  var_bar.name
             if k == 0:
                 u_var_bar = u_var.mean(dim=concat_dim)
                 v_var_bar = v_var.mean(dim=concat_dim)
