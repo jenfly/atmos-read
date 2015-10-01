@@ -3,4 +3,5 @@
 *.log
 testing/log
 *.o*
-run*
+testing/run*
+scripts/run*
