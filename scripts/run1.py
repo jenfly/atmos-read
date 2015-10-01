@@ -15,11 +15,8 @@ def filename(varname, datestr, savedir):
     print('Saving to ' + filen)
     return filen
 
-# for year in range(1986, 1991):
-#     for month in range(1, 13):
-
-for year in [1986]:
-    for month in range(4, 13):
+for year in range(1996, 2006):
+    for month in range(1, 13):
         datestr = '%d%02d' % (year, month)
 
         u = merra.load_daily(year, month, 'u', subset1=('plev', 200, 200))
