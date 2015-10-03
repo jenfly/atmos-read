@@ -242,7 +242,7 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
 
         var = get_data(var_id, var_id0, var_id1, pres[k], year, month,
                        concat_dim, subset1, verbose)
-        _, attrs, _ = atm.meta(var)
+        _, attrs, _, _ = atm.meta(var)
 
         if k == 0:
             var_bar = var.mean(dim=concat_dim)
