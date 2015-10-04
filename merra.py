@@ -1,3 +1,11 @@
+"""
+Functions to read and save MERRA reanalysis data.
+
+Convention for function names
+  Starts with - read_ : Read from OpenDAP url(s)
+              - load_ : Load from locally saved files
+"""
+
 import numpy as np
 import xray
 import collections
@@ -12,7 +20,7 @@ from atmos import print_if
 
 # ----------------------------------------------------------------------
 def get_varname(var_id):
-    """Return the variable name in MERRA data file.
+    """Return the variable name in MERRA naming convention.
 
     Parameters
     ----------
@@ -97,10 +105,13 @@ def get_dataset(var_id, time_res='daily', default='p'):
 
 
 # ----------------------------------------------------------------------
-def load_daily(year, month, var_id, concat_dim='TIME',
+def read_daily_month(year, month, var_id, concat_dim='TIME',
                subset1=(None, None, None), subset2=(None, None, None),
                verbose=True):
     """Return daily data for selected year and month for a single variable.
+
+    Reads daily MERRA data from OpenDAP urls and concatenates into a
+    single DataArray for the month.
 
     Parameters
     ----------
@@ -143,9 +154,75 @@ def load_daily(year, month, var_id, concat_dim='TIME',
 
 
 # ----------------------------------------------------------------------
+def load_daily_season(pathstr, year, season='ann', var_id=None,
+                      concat_dim='TIME', lat1=-90, lat2=90, lon1=0, lon2=360, 
+                      verbose=True):
+    """Return daily data for a selected year, season and lat-lon subset.
+
+    Loads daily data from locally saved files and concatenates it into
+    a single DataArray or Dataset for that year and season.
+
+    Parameters
+    ----------
+    pathstr : str
+       Beginning of path for each data file, where each file name is in
+       the format *yyyymm.nc. 
+       e.g. pathstr = '~/datastore/merra/daily/u200_'
+    year : int
+       Year to load.
+    season : str, optional
+       Season to load. Valid values are as listed in atm.season_months()
+       e.g. 'jul', 'jja', 'ann'
+       Default is entire year ('ann')
+    var_id : str, optional
+       Variable to extract. If omitted, all variables in the data are
+       included and the output is a Dataset.
+    concat_dim : str, optional
+        Name of time dimension for concatenation.
+    lat1, lat2, lon1, lon2 : floats, optional
+        Lat-lon subset to extract.
+    verbose : bool, optional
+        If True, print updates while processing files.
+
+    Returns
+    -------
+    data : xray.DataArray or xray.Dataset      
+
+    """
+    months = atm.season_months(season)
+    paths = []
+    for m in months:
+        datestr = '%d%02d' % (year, m)
+        paths.append(pathstr + datestr + '.nc')
+
+    # Make sure longitude range is consistent with data
+    with xray.open_dataset(paths[0]) as ds:
+        lonmax = atm.lon_convention(atm.get_coord(ds, 'lon'))
+    if lon2 - lon1 == 360:
+        if lonmax < lon2:
+            offset = -180
+        elif lonmax > lon2:
+            offset = 180
+        else:
+            offset = 0
+        lon1, lon2 = lon1 + offset, lon2 + offset
+    print(lon1, lon2, lonmax)
+
+    # Load daily data
+    data = atm.load_concat(paths, get_varname(var_id), concat_dim,
+                           ('lat', lat1, lat2), ('lon', lon1, lon2), verbose)
+
+    return data
+
+
+# ----------------------------------------------------------------------
 def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
                        concat_dim='TIME', verbose=True):
     """Return the monthly mean of daily data.
+
+    Reads MERRA daily data from OpenDAP urls, computes fluxes, and
+    returns the monthly mean of the daily variable and its zonal and
+    meridional fluxes.
 
     Parameters
     ----------
@@ -216,11 +293,11 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
     # Get daily data (raw or calculate extended variables)
     def get_data(var_id, var_id0, var_id1, pres, year, month, concat_dim,
                  subset1, verbose):
-        var0 = load_daily(year, month, var_id0, concat_dim=concat_dim,
-                          subset1=subset1, verbose=verbose)
+        var0 = read_daily_month(year, month, var_id0, concat_dim=concat_dim,
+                                subset1=subset1, verbose=verbose)
         if var_id1 is not None:
-            var1 = load_daily(year, month, var_id1, concat_dim=concat_dim,
-                              subset1=subset1, verbose=verbose)
+            var1 = read_daily_month(year, month, var_id1, concat_dim=concat_dim,
+                                    subset1=subset1, verbose=verbose)
         if var_id == var_id0:
             var = var0
         elif var_id.lower() == 'theta':
@@ -252,10 +329,10 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
                                   dim=pname)
 
         if fluxes:
-            u = load_daily(year, month, u_nm, concat_dim=concat_dim,
-                           subset1=subset1, verbose=verbose)
-            v = load_daily(year, month, v_nm, concat_dim=concat_dim,
-                           subset1=subset1, verbose=verbose)
+            u = read_daily_month(year, month, u_nm, concat_dim=concat_dim,
+                                 subset1=subset1, verbose=verbose)
+            v = read_daily_month(year, month, v_nm, concat_dim=concat_dim,
+                                 subset1=subset1, verbose=verbose)
             u_var = u * var
             u_var.name = get_varname(u_nm) + '*' +  var_bar.name
             v_var = v * var
@@ -278,84 +355,8 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
         return var_bar
 
 
-# # ----------------------------------------------------------------------
-# def monthly_from_daily(year, month, var_id_a, var_id_b=None, concat_dim='TIME',
-#                        verbose=True):
-#     """Return the monthly mean of daily data.
-#
-#     Parameters
-#     ----------
-#     year, month : int
-#         Numeric year and month (1-12).
-#     var_id_a, var_id_b : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps',
-#                           'evap', 'precip'},  or str
-#         Variable IDs.  Can be generic ID from the list above, in which
-#         case get_varname() is called to get the specific ID for MERRA. Or
-#         var_id can be the exact name as it appears in MERRA data files.
-#     concat_dim : str, optional
-#         Name of dimension for concatenation.
-#     verbose : bool, optional
-#         If True, print updates while processing files.
-#
-#     Returns
-#     -------
-#     a_bar[, b_bar, ab_bar] : xray.DataArray(s)
-#         Mean of daily data for variable a, variable b (if applicable),
-#         and a * b (if applicable).
-#
-#     Examples
-#     --------
-#     ubar = monthly_from_daily(1979, 1, 'u')
-#     ubar, vbar, uvbar = monthly_from_daily(1979, 1, 'u', 'v')
-#     """
-#
-#     # Read metadata from one file to get pressure-level array
-#     dataset = get_dataset(var_id_a, 'daily')
-#     if dataset.startswith('p_'):
-#         url = url_list(dataset, return_dict=False)[0]
-#         ds = xray.open_dataset(url)
-#         pname = atm.get_coord(ds, 'plev', 'name')
-#         plev = atm.get_coord(ds, 'plev')
-#         ds.close()
-#         scale1, scale2 = 0.9999, 1.0001
-#     else:
-#         plev = [np.nan]
-#
-#     # Iterate over vertical levels
-#     for k, p in enumerate(plev):
-#         if np.isnan(p):
-#             subset1 = (None, None, None)
-#             print_if('Surface data', verbose)
-#         else:
-#             subset1 = (pname, p * scale1, p * scale2)
-#             print_if('Pressure-level %.1f' % p, verbose)
-#
-#         a = load_daily(year, month, var_id_a, concat_dim=concat_dim,
-#                        subset1=subset1, verbose=verbose)
-#
-#         if k == 0:
-#             a_bar = a.mean(dim=concat_dim)
-#         else:
-#             a_bar = xray.concat([a_bar, a.mean(dim=concat_dim)], dim=pname)
-#
-#         if var_id_b is not None:
-#             b = load_daily(year, month, var_id_b, concat_dim=concat_dim,
-#                            subset1=subset1, verbose=verbose)
-#             ab = a * b
-#             ab.name = get_varname(var_id_a) + '_times_' + get_varname(var_id_b)
-#             if k == 0:
-#                 b_bar = b.mean(dim=concat_dim)
-#                 ab_bar = ab.mean(dim=concat_dim)
-#             else:
-#                 b_bar = xray.concat([b_bar, b.mean(dim=concat_dim)], dim=pname)
-#                 ab_bar = xray.concat([ab_bar, ab.mean(dim=concat_dim)],
-#                                       dim=pname)
-#
-#     if var_id_b is None:
-#         return a_bar
-#     else:
-#         return a_bar, b_bar, ab_bar
-#
+
+
 
 # ======================================================================
 # Lists of OpenDAP urls for data files
