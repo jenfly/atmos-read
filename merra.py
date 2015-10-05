@@ -155,8 +155,8 @@ def read_daily_month(year, month, var_id, concat_dim='TIME',
 
 # ----------------------------------------------------------------------
 def load_daily_season(pathstr, year, season='ann', var_id=None,
-                      concat_dim=None, lat1=-90, lat2=90, lon1=0, lon2=360,
-                      verbose=True):
+                      lat1=-90, lat2=90, lon1=0, lon2=360,
+                      verbose=True, concat_dim=None):
     """Return daily data for a selected year, season and lat-lon subset.
 
     Loads daily data from locally saved files and concatenates it into
@@ -177,11 +177,11 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
     var_id : str, optional
        Variable to extract. If omitted, all variables in the data are
        included and the output is a Dataset.
+    lat1, lat2, lon1, lon2 : floats, optional
+        Lat-lon subset to extract.
     concat_dim : str, optional
         Name of time dimension for concatenation. If omitted, then
         atm.get_coord() is called to get the name from the data file.
-    lat1, lat2, lon1, lon2 : floats, optional
-        Lat-lon subset to extract.
     verbose : bool, optional
         If True, print updates while processing files.
 

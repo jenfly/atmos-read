@@ -10,7 +10,8 @@ import atmos as atm
 from merra import load_daily_season
 
 datadir = '/home/jennifer/datastore/merra/daily/'
-year = 1995
+#year = 1995
+year = 1979
 
 ustr = datadir + 'merra_u200_'
 vstr = datadir + 'merra_v200_'
@@ -23,13 +24,11 @@ atm.pcolor_latlon(u.mean(dim='TIME'))
 season = 'jja'
 lon1, lon2 = 0, 100
 lat1, lat2 = -20, 50
-u = load_daily_season(ustr, year, season, 'U', lat1=lat1, lat2=lat2,
-                      lon1=lon1, lon2=lon2)
+u = load_daily_season(ustr, year, season, 'U', lat1, lat2, lon1, lon2)
 plt.figure()
 atm.pcolor_latlon(u.mean(dim='TIME'))
 
-ds = load_daily_season(ustr, year, season, lat1=lat1, lat2=lat2,
-                       lon1=lon1, lon2=lon2)
+ds = load_daily_season(ustr, year, season, None, lat1, lat2, lon1, lon2)
 u2 = ds['U']
 print((u == u2).any())
 
@@ -38,8 +37,7 @@ lon1, lon2 = 20, 120
 lat1, lat2 = -60, 60
 n = 8   # Number of time points per day
 days = np.arange(1, 366)
-u = load_daily_season(ustr, year, season, 'U', lat1=lat1, lat2=lat2,
-                      lon1=lon1, lon2=lon2)
+u = load_daily_season(ustr, year, season, 'U', lat1, lat2, lon1, lon2)
 udaily = atm.daily_from_subdaily(u, n, dayvals=days)
 plt.figure()
 atm.pcolor_latlon(udaily.mean(axis=0), axlims=(lat1,lat2,lon1,lon2))
