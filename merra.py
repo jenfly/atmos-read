@@ -155,7 +155,7 @@ def read_daily_month(year, month, var_id, concat_dim='TIME',
 
 # ----------------------------------------------------------------------
 def load_daily_season(pathstr, year, season='ann', var_id=None,
-                      concat_dim='TIME', lat1=-90, lat2=90, lon1=0, lon2=360, 
+                      concat_dim=None, lat1=-90, lat2=90, lon1=0, lon2=360,
                       verbose=True):
     """Return daily data for a selected year, season and lat-lon subset.
 
@@ -166,7 +166,7 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
     ----------
     pathstr : str
        Beginning of path for each data file, where each file name is in
-       the format *yyyymm.nc. 
+       the format *yyyymm.nc.
        e.g. pathstr = '~/datastore/merra/daily/u200_'
     year : int
        Year to load.
@@ -178,7 +178,8 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
        Variable to extract. If omitted, all variables in the data are
        included and the output is a Dataset.
     concat_dim : str, optional
-        Name of time dimension for concatenation.
+        Name of time dimension for concatenation. If omitted, then
+        atm.get_coord() is called to get the name from the data file.
     lat1, lat2, lon1, lon2 : floats, optional
         Lat-lon subset to extract.
     verbose : bool, optional
@@ -186,9 +187,9 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
 
     Returns
     -------
-    data : xray.DataArray or xray.Dataset      
-
+    data : xray.DataArray or xray.Dataset
     """
+
     months = atm.season_months(season)
     paths = []
     for m in months:
@@ -198,6 +199,8 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
     # Make sure longitude range is consistent with data
     with xray.open_dataset(paths[0]) as ds:
         lonmax = atm.lon_convention(atm.get_coord(ds, 'lon'))
+        if concat_dim is None:
+            concat_dim = atm.get_coord(ds, 'time', 'name')
     if lon2 - lon1 == 360:
         if lonmax < lon2:
             offset = -180
