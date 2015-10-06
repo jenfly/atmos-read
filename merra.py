@@ -105,23 +105,25 @@ def get_dataset(var_id, time_res='daily', default='p'):
 
 
 # ----------------------------------------------------------------------
-def read_daily_month(year, month, var_id, concat_dim='TIME',
+def read_daily(var_id, year, month, days=None, concat_dim='TIME',
                subset1=(None, None, None), subset2=(None, None, None),
                verbose=True):
-    """Return daily data for selected year and month for a single variable.
+    """Return MERRA daily data for a selected variable.
 
     Reads daily MERRA data from OpenDAP urls and concatenates into a
-    single DataArray for the month.
+    single DataArray for the selected days of the month.
 
     Parameters
     ----------
-    year, month : int
-        Numeric year and month (1-12).
     var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'},
              or str
         Variable ID.  Can be generic ID from the list above, in which
         case get_varname() is called to get the specific ID for MERRA. Or
         var_id can be the exact name as it appears in MERRA data files.
+    year, month : int
+        Numeric year and month (1-12).
+    days : list of ints, optional
+       Subset of days to read. If None, all days are included.
     concat_dim : str, optional
         Name of dimension for concatenation.
     subset1, subset2 : (str, float(s), float(s)), optional
@@ -139,15 +141,27 @@ def read_daily_month(year, month, var_id, concat_dim='TIME',
     Returns
     -------
     data : xray.DataArray
-        Daily data (3-hourly or hourly) for the month.
+        Daily data (3-hourly or hourly) for the month or a selected
+        subset of days.
     """
 
     var = get_varname(var_id)
-    date = '%d%02d' % (year, month)
     dataset = get_dataset(var_id, 'daily')
     urls = url_list(dataset)
 
-    paths = [urls[key] for key in urls.keys() if date in key]
+    if days is None:
+        # All days in the month
+        dates = ['%d%02d' % (year, month)]
+    elif isinstance(days, int):
+        # Single day
+        dates = ['%d%02d%02d' % (year, month, days)]
+    else:
+        # Subset of days
+        dates = ['%d%02d%02d' % (year, month, d) for d in days]
+
+    paths = []
+    for date in dates:
+        paths.extend([urls[key] for key in urls.keys() if date in key])
 
     data = atm.load_concat(paths, var, concat_dim, subset1, subset2, verbose)
     return data
@@ -296,11 +310,11 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
     # Get daily data (raw or calculate extended variables)
     def get_data(var_id, var_id0, var_id1, pres, year, month, concat_dim,
                  subset1, verbose):
-        var0 = read_daily_month(year, month, var_id0, concat_dim=concat_dim,
-                                subset1=subset1, verbose=verbose)
+        var0 = read_daily(var_id0, year, month, concat_dim=concat_dim,
+                          subset1=subset1, verbose=verbose)
         if var_id1 is not None:
-            var1 = read_daily_month(year, month, var_id1, concat_dim=concat_dim,
-                                    subset1=subset1, verbose=verbose)
+            var1 = read_daily(var_id1, year, month, concat_dim=concat_dim,
+                              subset1=subset1, verbose=verbose)
         if var_id == var_id0:
             var = var0
         elif var_id.lower() == 'theta':
@@ -332,10 +346,10 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
                                   dim=pname)
 
         if fluxes:
-            u = read_daily_month(year, month, u_nm, concat_dim=concat_dim,
-                                 subset1=subset1, verbose=verbose)
-            v = read_daily_month(year, month, v_nm, concat_dim=concat_dim,
-                                 subset1=subset1, verbose=verbose)
+            u = read_daily(u_nm, year, month, concat_dim=concat_dim,
+                           subset1=subset1, verbose=verbose)
+            v = read_daily(v_nm, year, month, concat_dim=concat_dim,
+                           subset1=subset1, verbose=verbose)
             u_var = u * var
             u_var.name = get_varname(u_nm) + '*' +  var_bar.name
             v_var = v * var
