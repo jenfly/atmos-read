@@ -175,7 +175,7 @@ def read_daily(var_ids, year, month, days=None, concat_dim='TIME',
 
 
 # ----------------------------------------------------------------------
-def load_daily_season(pathstr, year, season='ann', var_id=None,
+def load_daily_season(pathstr, year, season='ann', var_ids=None,
                       lat1=-90, lat2=90, lon1=0, lon2=360,
                       verbose=True, concat_dim=None):
     """Return daily data for a selected year, season and lat-lon subset.
@@ -195,8 +195,8 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
        Season to load. Valid values are as listed in atm.season_months()
        e.g. 'jul', 'jja', 'ann'
        Default is entire year ('ann')
-    var_id : str, optional
-       Variable to extract. If omitted, all variables in the data are
+    var_ids : str or list of str, optional
+       Variable(s) to extract. If omitted, all variables in the data are
        included and the output is a Dataset.
     lat1, lat2, lon1, lon2 : floats, optional
         Lat-lon subset to extract.
@@ -233,7 +233,8 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
     print(lon1, lon2, lonmax)
 
     # Load daily data
-    data = atm.load_concat(paths, get_varname(var_id), concat_dim,
+    var_nms = [get_varname(var_id) for var_id in atm.makelist(var_ids)]
+    data = atm.load_concat(paths, var_nms, concat_dim,
                            ('lat', lat1, lat2), ('lon', lon1, lon2), verbose)
 
     return data
