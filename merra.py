@@ -293,8 +293,8 @@ def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
 
     days = range(1, atm.days_this_month(year, month) + 1)
 
-    def scratchfile(k, year, month, day):
-        filestr = 'daily_level%d_%d%02d%02d.nc' % (k, year, month, day)
+    def scratchfile(varnm, k, year, month, day):
+        filestr = '%s_level%d_%d%02d%02d.nc' % (varnm, k, year, month, day)
         if scratchdir is not None:
             filestr = scratchdir + '/' + filestr
         return filestr
@@ -382,7 +382,7 @@ def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
                 ds[v_var.name] = v_var
 
             # Save to temporary scratch file
-            filenm = scratchfile(k, year, month, day)
+            filenm = scratchfile(var_id, k, year, month, day)
             files.append(filenm)
             print_if('Saving to scratch file ' + filenm, verbose)
             ds.to_netcdf(filenm)
