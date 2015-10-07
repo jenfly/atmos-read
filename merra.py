@@ -109,10 +109,10 @@ def get_dataset(var_id, time_res='daily', default='p'):
 def read_daily(var_ids, year, month, days=None, concat_dim='TIME',
                subset1=(None, None, None), subset2=(None, None, None),
                verbose=True):
-    """Return MERRA daily data for a selected variable.
+    """Return MERRA daily data for selected variable(s).
 
     Reads daily MERRA data from OpenDAP urls and concatenates into a
-    single DataArray for the selected days of the month.
+    single DataArray or Dataset for the selected days of the month.
 
     Parameters
     ----------
@@ -142,17 +142,14 @@ def read_daily(var_ids, year, month, days=None, concat_dim='TIME',
 
     Returns
     -------
-    data : xray.DataArray
+    data : xray.DataArray or xray.Dataset
         Daily data (3-hourly or hourly) for the month or a selected
         subset of days.
     """
 
     var_ids = atm.makelist(var_ids)
     var_nms = [get_varname(var_id) for var_id in var_ids]
-    datasets = [get_dataset(var_id, 'daily') for var_id in var_ids]
-    dataset = datasets[0]
-    if not all(datasets == dataset):
-        raise ValueError('Incompatible variables, %s' % ' '.join(var_ids))
+    dataset = get_dataset(var_ids[0], 'daily')
     urls = url_list(dataset)
 
     if days is None:
@@ -233,7 +230,10 @@ def load_daily_season(pathstr, year, season='ann', var_ids=None,
     print(lon1, lon2, lonmax)
 
     # Load daily data
-    var_nms = [get_varname(var_id) for var_id in atm.makelist(var_ids)]
+    if var_ids is None:
+        var_nms = None
+    else:
+        var_nms = [get_varname(var_id) for var_id in atm.makelist(var_ids)]
     data = atm.load_concat(paths, var_nms, concat_dim,
                            ('lat', lat1, lat2), ('lon', lon1, lon2), verbose)
 

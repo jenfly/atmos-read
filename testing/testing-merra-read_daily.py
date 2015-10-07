@@ -26,3 +26,8 @@ u2 = read_daily('u', year, month, days, subset1=('lat', lat1, lat2),
 days = np.arange(10,13)
 u3 = read_daily('u', year, month, days, subset1=('lat', lat1, lat2),
                 subset2=('lon', lon1, lon2))
+
+# Multiple variables
+days = [10, 11]
+ds = read_daily(['u', 'v', 'T'], year, month, days,
+                subset1=('lat', lat1, lat2), subset2=('lon', lon1, lon2))
