@@ -318,8 +318,7 @@ def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
         ds.close()
         scale1, scale2 = 0.9999, 1.0001
     else:
-        plev = [np.nan]
-        pres = None
+        plev, pres = [np.nan], [np.nan]
         if fluxes:
             raise ValueError('Fluxes cannot be calculated for surface data.')
 
@@ -394,8 +393,9 @@ def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
             data = ds.mean(dim=concat_dim)
         else:
             data = xray.concat([data, ds.mean(dim=concat_dim)], dim=pname)
-            for var in data.data_vars:
-                data[var].attrs = ds[var].attrs
+    
+    for var in data.data_vars:
+        data[var].attrs = ds[var].attrs
 
     if not fluxes:
         data = data[varname]
