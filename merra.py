@@ -9,6 +9,7 @@ Convention for function names
 import numpy as np
 import xray
 import collections
+import os
 import pandas as pd
 import urllib2
 from bs4 import BeautifulSoup
@@ -233,7 +234,7 @@ def load_daily_season(pathstr, year, season='ann', var_id=None,
 
 
 # ----------------------------------------------------------------------
-def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
+def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
                        concat_dim='TIME', scratchdir=None, keepscratch=False,
                        verbose=True):
     """Return the monthly mean of daily data.
@@ -383,17 +384,18 @@ def monthly_from_daily(year, month, var_id, fluxes=False, fluxvars=('u', 'v'),
         # Concatenate daily scratch files
         ds = atm.load_concat(files)
 
-        #if not keepscratch:
-            # Delete scratch files
+        if not keepscratch:
+            for f in files:
+                os.remove(f)
 
         # Compute monthly means
         print_if('Computing monthly means', verbose)
         if k == 0:
             data = ds.mean(dim=concat_dim)
-            for var in data.data_vars:
-                data[var].attrs = ds[var].attrs
         else:
             data = xray.concat([data, ds.mean(dim=concat_dim)], dim=pname)
+            for var in data.data_vars:
+                data[var].attrs = ds[var].attrs
 
     if not fluxes:
         data = data[varname]

@@ -2,9 +2,10 @@ import sys
 sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 sys.path.append('/home/jwalker/dynamics/python/atmos-read')
 
-import os
 import merra
 import atmos as atm
+
+scratchdir = '/net/eady/data1/jwalker/datastore/scratch/'
 
 def filename(varname, datestr):
     savedir = '/net/eady/data1/jwalker/datastore/merra/monthly/'
@@ -13,18 +14,21 @@ def filename(varname, datestr):
     return filen
 
 year = 1979
-month = 1
+month = 2
 
 datestr = '_%d%02d.nc' % (year, month)
 
 # One variable, surface
-precip = merra.monthly_from_daily(year, month, 'precip')
+precip = merra.monthly_from_daily(year, month, 'precip', fluxes=False,
+                                  scratchdir=scratchdir)
 atm.save_nc(filename('precip', datestr), precip)
 
 # One variable, pressure-level
-T = merra.monthly_from_daily(year, month, 'T')
+T = merra.monthly_from_daily(year, month, 'T', fluxes=False,
+                             scratchdir=scratchdir)
 atm.save_nc(filename('T', datestr), T)
 
 # Variable and fluxes, pressure-level
-q, uq, vq = merra.monthly_from_daily(year, month, 'q', fluxes=True)
-atm.save_nc(filename('q_flx', datestr), q, uq, vq)
+ds = merra.monthly_from_daily(year, month, 'q', fluxes=True,
+                              scratchdir=scratchdir)
+ds.to_netcdf(filename('q_flx', datestr))
