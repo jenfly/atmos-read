@@ -106,7 +106,7 @@ def get_dataset(var_id, time_res='daily', default='p'):
 
 
 # ----------------------------------------------------------------------
-def read_daily(var_id, year, month, days=None, concat_dim='TIME',
+def read_daily(var_ids, year, month, days=None, concat_dim='TIME',
                subset1=(None, None, None), subset2=(None, None, None),
                verbose=True):
     """Return MERRA daily data for a selected variable.
@@ -116,11 +116,12 @@ def read_daily(var_id, year, month, days=None, concat_dim='TIME',
 
     Parameters
     ----------
-    var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'},
-             or str
-        Variable ID.  Can be generic ID from the list above, in which
+    var_ids : str or list of str
+        Variable ID(s).  Can be generic ID from the list below, in which
         case get_varname() is called to get the specific ID for MERRA. Or
         var_id can be the exact name as it appears in MERRA data files.
+        Generic IDs:
+          {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
     year, month : int
         Numeric year and month (1-12).
     days : list of ints, optional
@@ -146,8 +147,12 @@ def read_daily(var_id, year, month, days=None, concat_dim='TIME',
         subset of days.
     """
 
-    var = get_varname(var_id)
-    dataset = get_dataset(var_id, 'daily')
+    var_ids = atm.makelist(var_ids)
+    var_nms = [get_varname(var_id) for var_id in var_ids]
+    datasets = [get_dataset(var_id, 'daily') for var_id in var_ids]
+    dataset = datasets[0]
+    if not all(datasets == dataset):
+        raise ValueError('Incompatible variables, %s' % ' '.join(var_ids))
     urls = url_list(dataset)
 
     if days is None:
@@ -164,7 +169,8 @@ def read_daily(var_id, year, month, days=None, concat_dim='TIME',
     for date in dates:
         paths.extend([urls[key] for key in urls.keys() if date in key])
 
-    data = atm.load_concat(paths, var, concat_dim, subset1, subset2, verbose)
+    data = atm.load_concat(paths, var_nms, concat_dim, subset1, subset2,
+                           verbose)
     return data
 
 
@@ -393,7 +399,7 @@ def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
             data = ds.mean(dim=concat_dim)
         else:
             data = xray.concat([data, ds.mean(dim=concat_dim)], dim=pname)
-    
+
     for var in data.data_vars:
         data[var].attrs = ds[var].attrs
 
