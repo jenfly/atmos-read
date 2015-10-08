@@ -324,7 +324,7 @@ def calc_fluxes(year, month,
             print_if('Computing equivalent potential temperature', verbose)
             T = data[get_varname('T')]
             q = data[get_varname('q')]
-            data['theta_e'] = atm.potential_temp(T, pres, q)
+            data['theta_e'] = atm.equiv_potential_temp(T, pres, q)
 
         return data
 
