@@ -386,174 +386,173 @@ def calc_fluxes(year, month,
 
 
 # ----------------------------------------------------------------------
-def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
-                       concat_dim='TIME', scratchdir=None, keepscratch=False,
-                       verbose=True):
-    """Return the monthly mean of daily data.
-
-    Reads MERRA daily data from OpenDAP urls, computes fluxes, and
-    returns the monthly mean of the daily variable and its zonal and
-    meridional fluxes.
-
-    Parameters
-    ----------
-    year, month : int
-        Numeric year and month (1-12).
-    var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'},
-              or str
-        Variable ID.  Can be generic ID from the list above, in which
-        case get_varname() is called to get the specific ID for MERRA. Or
-        var_id can be the exact name as it appears in MERRA data files.
-    fluxes : bool, optional
-        If True, return the mean fluxes u*var, v*var, along with var.
-        If False, return only the specified variable.
-    fluxvars : tuple of str, optional
-        Names of u and v to extract from data to calculate fluxes. Only
-        used if fluxes is True.
-    concat_dim : str, optional
-        Name of dimension for concatenation.
-    scratchdir : str, optional
-        Directory path to store temporary files while processing data.
-        If omitted, the current working directory is used.
-    keepscratch : bool, optional
-        If True, scratch files are kept in scratchdir. Otherwise they
-        are deleted.
-    verbose : bool, optional
-        If True, print updates while processing files.
-
-    Returns
-    -------
-    data : xray.DataArray or xray.Dataset
-        Mean of daily data for variable var_id, and the mean of the
-        daily zonal fluxes (u * var) and meridional fluxes (v * var),
-        if applicable.
-
-    Examples
-    --------
-    ubar = monthly_from_daily(1979, 1, 'u')
-    qbar, uq_bar, vq_bar = monthly_from_daily(1979, 1, 'q', fluxes=True)
-    """
-
-    (u_nm, v_nm) = fluxvars
-
-    days = range(1, atm.days_this_month(year, month) + 1)
-
-    def scratchfile(varnm, k, year, month, day):
-        filestr = '%s_level%d_%d%02d%02d.nc' % (varnm, k, year, month, day)
-        if scratchdir is not None:
-            filestr = scratchdir + '/' + filestr
-        return filestr
-
-    # Extended variables (calculated from others)
-    ext_vars = {'theta' : {'var_id0' : 'T',
-                           'var_id1' : None},
-                'theta_e' : {'var_id0' : 'T',
-                             'var_id1' : 'q'}}
-
-    if var_id in ext_vars:
-        var_id0 = ext_vars[var_id.lower()]['var_id0']
-        var_id1 = ext_vars[var_id.lower()]['var_id1']
-    else:
-        var_id0, var_id1 = var_id, None
-
-
-    # Read metadata from one file to get pressure-level array
-    dataset = get_dataset(var_id0, 'daily')
-    if dataset.startswith('p_'):
-        url = url_list(dataset, return_dict=False)[0]
-        ds = xray.open_dataset(url)
-        pname = atm.get_coord(ds, 'plev', 'name')
-        plev = atm.get_coord(ds, 'plev')
-        # Pressure levels in Pa for theta/theta_e calcs
-        p_units = atm.pres_units(ds[pname].units)
-        pres = atm.pres_convert(plev, p_units, 'Pa')
-        ds.close()
-        scale1, scale2 = 0.9999, 1.0001
-    else:
-        plev, pres = [np.nan], [np.nan]
-        if fluxes:
-            raise ValueError('Fluxes cannot be calculated for surface data.')
-
-    # Get daily data (raw or calculate extended variables)
-    def get_data(var_id, var_id0, var_id1, pres, year, month, day,
-                 concat_dim, subset1, verbose):
-        var0 = read_daily(var_id0, year, month, day, concat_dim=concat_dim,
-                          subset1=subset1, verbose=verbose)
-        if var_id1 is not None:
-            var1 = read_daily(var_id1, year, month, day, concat_dim=concat_dim,
-                              subset1=subset1, verbose=verbose)
-        if var_id == var_id0:
-            var = var0
-        elif var_id.lower() == 'theta':
-            var = atm.potential_temp(var0, pres)
-        elif var_id.lower() == 'theta_e':
-            var = atm.equiv_potential_temp(var0, pres, var1)
-        else:
-            raise ValueError('Invalid var_id ' + var_id)
-        return var
-
-    # Iterate over vertical levels
-    for k, p in enumerate(plev):
-        if np.isnan(p):
-            subset1 = (None, None, None)
-            print_if('Surface data', verbose)
-        else:
-            subset1 = (pname, p * scale1, p * scale2)
-            print_if('Pressure-level %.1f' % p, verbose)
-
-        files = []
-
-        for day in days:
-            # Read data for this level and day
-            var = get_data(var_id, var_id0, var_id1, pres[k], year, month, day,
-                           concat_dim, subset1, verbose)
-            varname, attrs, _, _ = atm.meta(var)
-            ds = var.to_dataset()
-
-            if fluxes:
-                u = read_daily(u_nm, year, month, day, concat_dim=concat_dim,
-                               subset1=subset1, verbose=verbose)
-                v = read_daily(v_nm, year, month, day, concat_dim=concat_dim,
-                               subset1=subset1, verbose=verbose)
-                u_var = u * var
-                v_var = v * var
-
-                u_var.name = get_varname(u_nm) + '*' +  var.name
-                units = var.attrs['units'] + ' * ' + u.attrs['units']
-                u_var.attrs['units'] = units
-                v_var.name = get_varname(v_nm) + '*' +  var.name
-                v_var.attrs['units'] = units
-                ds[u_var.name] = u_var
-                ds[v_var.name] = v_var
-
-            # Save to temporary scratch file
-            filenm = scratchfile(var_id, k, year, month, day)
-            files.append(filenm)
-            print_if('Saving to scratch file ' + filenm, verbose)
-            ds.to_netcdf(filenm)
-
-        # Concatenate daily scratch files
-        ds = atm.load_concat(files)
-
-        if not keepscratch:
-            for f in files:
-                os.remove(f)
-
-        # Compute monthly means
-        print_if('Computing monthly means', verbose)
-        if k == 0:
-            data = ds.mean(dim=concat_dim)
-        else:
-            data = xray.concat([data, ds.mean(dim=concat_dim)], dim=pname)
-
-    for var in data.data_vars:
-        data[var].attrs = ds[var].attrs
-
-    if not fluxes:
-        data = data[varname]
-    return data
-
-
+# def monthly_from_daily(year, month, var_id, fluxes=True, fluxvars=('u', 'v'),
+#                        concat_dim='TIME', scratchdir=None, keepscratch=False,
+#                        verbose=True):
+#     """Return the monthly mean of daily data.
+#
+#     Reads MERRA daily data from OpenDAP urls, computes fluxes, and
+#     returns the monthly mean of the daily variable and its zonal and
+#     meridional fluxes.
+#
+#     Parameters
+#     ----------
+#     year, month : int
+#         Numeric year and month (1-12).
+#     var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'},
+#               or str
+#         Variable ID.  Can be generic ID from the list above, in which
+#         case get_varname() is called to get the specific ID for MERRA. Or
+#         var_id can be the exact name as it appears in MERRA data files.
+#     fluxes : bool, optional
+#         If True, return the mean fluxes u*var, v*var, along with var.
+#         If False, return only the specified variable.
+#     fluxvars : tuple of str, optional
+#         Names of u and v to extract from data to calculate fluxes. Only
+#         used if fluxes is True.
+#     concat_dim : str, optional
+#         Name of dimension for concatenation.
+#     scratchdir : str, optional
+#         Directory path to store temporary files while processing data.
+#         If omitted, the current working directory is used.
+#     keepscratch : bool, optional
+#         If True, scratch files are kept in scratchdir. Otherwise they
+#         are deleted.
+#     verbose : bool, optional
+#         If True, print updates while processing files.
+#
+#     Returns
+#     -------
+#     data : xray.DataArray or xray.Dataset
+#         Mean of daily data for variable var_id, and the mean of the
+#         daily zonal fluxes (u * var) and meridional fluxes (v * var),
+#         if applicable.
+#
+#     Examples
+#     --------
+#     ubar = monthly_from_daily(1979, 1, 'u')
+#     qbar, uq_bar, vq_bar = monthly_from_daily(1979, 1, 'q', fluxes=True)
+#     """
+#
+#     (u_nm, v_nm) = fluxvars
+#
+#     days = range(1, atm.days_this_month(year, month) + 1)
+#
+#     def scratchfile(varnm, k, year, month, day):
+#         filestr = '%s_level%d_%d%02d%02d.nc' % (varnm, k, year, month, day)
+#         if scratchdir is not None:
+#             filestr = scratchdir + '/' + filestr
+#         return filestr
+#
+#     # Extended variables (calculated from others)
+#     ext_vars = {'theta' : {'var_id0' : 'T',
+#                            'var_id1' : None},
+#                 'theta_e' : {'var_id0' : 'T',
+#                              'var_id1' : 'q'}}
+#
+#     if var_id in ext_vars:
+#         var_id0 = ext_vars[var_id.lower()]['var_id0']
+#         var_id1 = ext_vars[var_id.lower()]['var_id1']
+#     else:
+#         var_id0, var_id1 = var_id, None
+#
+#
+#     # Read metadata from one file to get pressure-level array
+#     dataset = get_dataset(var_id0, 'daily')
+#     if dataset.startswith('p_'):
+#         url = url_list(dataset, return_dict=False)[0]
+#         ds = xray.open_dataset(url)
+#         pname = atm.get_coord(ds, 'plev', 'name')
+#         plev = atm.get_coord(ds, 'plev')
+#         # Pressure levels in Pa for theta/theta_e calcs
+#         p_units = atm.pres_units(ds[pname].units)
+#         pres = atm.pres_convert(plev, p_units, 'Pa')
+#         ds.close()
+#         scale1, scale2 = 0.9999, 1.0001
+#     else:
+#         plev, pres = [np.nan], [np.nan]
+#         if fluxes:
+#             raise ValueError('Fluxes cannot be calculated for surface data.')
+#
+#     # Get daily data (raw or calculate extended variables)
+#     def get_data(var_id, var_id0, var_id1, pres, year, month, day,
+#                  concat_dim, subset1, verbose):
+#         var0 = read_daily(var_id0, year, month, day, concat_dim=concat_dim,
+#                           subset1=subset1, verbose=verbose)
+#         if var_id1 is not None:
+#             var1 = read_daily(var_id1, year, month, day, concat_dim=concat_dim,
+#                               subset1=subset1, verbose=verbose)
+#         if var_id == var_id0:
+#             var = var0
+#         elif var_id.lower() == 'theta':
+#             var = atm.potential_temp(var0, pres)
+#         elif var_id.lower() == 'theta_e':
+#             var = atm.equiv_potential_temp(var0, pres, var1)
+#         else:
+#             raise ValueError('Invalid var_id ' + var_id)
+#         return var
+#
+#     # Iterate over vertical levels
+#     for k, p in enumerate(plev):
+#         if np.isnan(p):
+#             subset1 = (None, None, None)
+#             print_if('Surface data', verbose)
+#         else:
+#             subset1 = (pname, p * scale1, p * scale2)
+#             print_if('Pressure-level %.1f' % p, verbose)
+#
+#         files = []
+#
+#         for day in days:
+#             # Read data for this level and day
+#             var = get_data(var_id, var_id0, var_id1, pres[k], year, month, day,
+#                            concat_dim, subset1, verbose)
+#             varname, attrs, _, _ = atm.meta(var)
+#             ds = var.to_dataset()
+#
+#             if fluxes:
+#                 u = read_daily(u_nm, year, month, day, concat_dim=concat_dim,
+#                                subset1=subset1, verbose=verbose)
+#                 v = read_daily(v_nm, year, month, day, concat_dim=concat_dim,
+#                                subset1=subset1, verbose=verbose)
+#                 u_var = u * var
+#                 v_var = v * var
+#
+#                 u_var.name = get_varname(u_nm) + '*' +  var.name
+#                 units = var.attrs['units'] + ' * ' + u.attrs['units']
+#                 u_var.attrs['units'] = units
+#                 v_var.name = get_varname(v_nm) + '*' +  var.name
+#                 v_var.attrs['units'] = units
+#                 ds[u_var.name] = u_var
+#                 ds[v_var.name] = v_var
+#
+#             # Save to temporary scratch file
+#             filenm = scratchfile(var_id, k, year, month, day)
+#             files.append(filenm)
+#             print_if('Saving to scratch file ' + filenm, verbose)
+#             ds.to_netcdf(filenm)
+#
+#         # Concatenate daily scratch files
+#         ds = atm.load_concat(files)
+#
+#         if not keepscratch:
+#             for f in files:
+#                 os.remove(f)
+#
+#         # Compute monthly means
+#         print_if('Computing monthly means', verbose)
+#         if k == 0:
+#             data = ds.mean(dim=concat_dim)
+#         else:
+#             data = xray.concat([data, ds.mean(dim=concat_dim)], dim=pname)
+#
+#     for var in data.data_vars:
+#         data[var].attrs = ds[var].attrs
+#
+#     if not fluxes:
+#         data = data[varname]
+#     return data
+#
 
 # ======================================================================
 # Lists of OpenDAP urls for data files
