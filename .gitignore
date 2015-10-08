@@ -4,5 +4,4 @@
 testing/log
 scripts/log
 *.o*
-testing/run*
-scripts/run*
+fram
