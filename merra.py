@@ -6,6 +6,7 @@ Convention for function names
               - load_ : Load from locally saved files
 """
 
+from __future__ import division
 import numpy as np
 import xray
 import collections

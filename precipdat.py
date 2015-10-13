@@ -5,10 +5,11 @@
 - TRMM
 """
 
+from __future__ import division
+
 import sys
 sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 
-from __future__ import division
 import xray
 import numpy as np
 from datetime import datetime
@@ -40,7 +41,7 @@ def read_cmap(datafile, yearmin=None, yearmax=None):
         yearmin = YRMIN
 
     # Read data
-    with xray.open_dataset(cmap_file) as ds:
+    with xray.open_dataset(datafile) as ds:
         precip = ds['precip'].load()
 
     # Discard incomplete year at end
