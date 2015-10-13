@@ -13,8 +13,8 @@ scratchdir = '/net/eady/data1/jwalker/datastore/scratch/'
 savedir = '/net/eady/data1/jwalker/datastore/merra/monthly/'
 var_ids=['u', 'q', 'T', 'theta', 'theta_e', 'hgt']
 
-def filename(varname, year, month):    
-    datestr = '_%d%02d.nc' % (year, month)
+def filename(varname, year, month):
+    datestr = '_flx_%d%02d.nc' % (year, month)
     filen = savedir + varname + datestr
     print('Saving to ' + filen)
     return filen
