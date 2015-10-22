@@ -583,7 +583,7 @@ def url_list(dataset, return_dict=True):
         Dict of date:url pairs or list of urls.
     """
 
-    merradir = atm.homedir() + 'dynamics/atmos-read/data/'
+    merradir = atm.homedir() + 'dynamics/python/atmos-read/data/'
     if dataset in ['p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily']:
         filename = merradir + 'merra_urls_' + dataset + '.csv'
     else:
