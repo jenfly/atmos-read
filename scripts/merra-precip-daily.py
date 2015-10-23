@@ -26,13 +26,12 @@ nperday = 24
 for yr in years:
     for mon in months:
         prec1 = merra.read_daily('precip', yr, mon)
-        dayvals = range(1, atm.days_this_month(yr, mon) + 1)
-        prec1 = atm.daily_from_subdaily(precip, nperday, dayvals=dayvals)
+        dayvals = atm.season_days(atm.month_str(mon), atm.isleap(yr))
+        prec1 = atm.daily_from_subdaily(prec1, nperday, dayvals=dayvals)
         if mon == 1:
             precip = prec1
         else:
             precip = xray.concat([precip, prec1], dim='day')
 
     # Save daily mean data for this year
-    atm.save_nc(filename(year), precip)
-
+    atm.save_nc(filename(yr), precip)
