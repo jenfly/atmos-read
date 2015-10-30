@@ -3,6 +3,7 @@ sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 sys.path.append('/home/jwalker/dynamics/python/atmos-read')
 
 import os
+import numpy as np
 import merra
 import atmos as atm
 
@@ -23,8 +24,8 @@ for year in years:
     for month in months:
         datestr = '%d%02d' % (year, month)
 
-        u = merra.load_daily(year, month, 'u', subset1=('plev', plev, plev))
+        u = merra.read_daily('u', year, month, subset1=('plev', plev, plev))
         atm.save_nc(filename('u', plev, datestr, savedir), u)
 
-        v = merra.load_daily(year, month, 'v', subset1=('plev', plev, plev))
+        v = merra.load_daily('v', year, month, subset1=('plev', plev, plev))
         atm.save_nc(filename('v', plev, datestr, savedir), v)
