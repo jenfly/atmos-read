@@ -11,28 +11,29 @@ from merra import load_daily_season
 
 datadir = '/home/jwalker/eady/datastore/merra/daily/'
 savedir = datadir
+plev = 850
 years = np.arange(1979, 2015)
 season = 'ann'
 lon1, lon2 = 40, 120
 lat1, lat2 = -60, 60
 nperday = 8
 
-def pathstr(var):
-    return datadir + 'merra_' + var + '200_'
+def pathstr(var, plev):
+    return datadir + 'merra_' + var + str(plev) + '_'
 
-def outfile(year):
+def outfile(year, plev):
     lats = atm.latlon_labels([lat1, lat2], 'lat', '%.0f', deg_symbol=False)
     lons = atm.latlon_labels([lon1, lon2], 'lon', '%.0f', deg_symbol=False)
     subset = '%s-%s_%s-%s' % (lons[0], lons[1], lats[0], lats[1])
-    return datadir + 'merra_uv200_%s_%d.nc' % (subset, year)
+    return datadir + 'merra_uv%d_%s_%d.nc' % (plev, subset, year)
 
 for year in years:
     print('Loading U')
-    u = load_daily_season(pathstr('u'), year, season, 'U', lat1, lat2, lon1,
-                          lon2)
+    u = load_daily_season(pathstr('u', plev), year, season, 'U',
+                          lat1, lat2, lon1, lon2)
     print('Loading V')
-    v = load_daily_season(pathstr('v'), year, season, 'V', lat1, lat2, lon1,
-                          lon2)
+    v = load_daily_season(pathstr('v', plev), year, season, 'V',
+                          lat1, lat2, lon1, lon2)
     print('Calculating vorticity and Rossby number')
     rel_vort, _ , _ = atm.vorticity(u, v)
     Ro = atm.rossby_num(u, v)
