@@ -11,7 +11,7 @@ from merra import load_daily_season
 
 datadir = '/home/jwalker/eady/datastore/merra/daily/'
 savedir = datadir
-plev = 850
+plev = 200
 years = np.arange(1979, 2015)
 season = 'ann'
 lon1, lon2 = 40, 120
@@ -46,5 +46,5 @@ for year in years:
                                        dayvals=days)
     Ro = atm.daily_from_subdaily(Ro, nperday, dayname='Day', dayvals=days)
 
-    print('Saving to ' + outfile(year))
-    atm.save_nc(outfile(year), u, v, rel_vort, Ro)
+    print('Saving to ' + outfile(year, plev))
+    atm.save_nc(outfile(year, plev), u, v, rel_vort, Ro)
