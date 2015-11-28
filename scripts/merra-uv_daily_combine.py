@@ -11,7 +11,8 @@ from merra import load_daily_season
 
 datadir = '/home/jwalker/eady/datastore/merra/daily/'
 savedir = datadir
-plev = 200
+#plev = 200
+plev = 850
 years = np.arange(1979, 2015)
 season = 'ann'
 lon1, lon2 = 40, 120

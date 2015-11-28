@@ -27,5 +27,5 @@ for year in years:
         u = merra.read_daily('u', year, month, subset1=('plev', plev, plev))
         atm.save_nc(filename('u', plev, datestr, savedir), u)
 
-        v = merra.load_daily('v', year, month, subset1=('plev', plev, plev))
+        v = merra.read_daily('v', year, month, subset1=('plev', plev, plev))
         atm.save_nc(filename('v', plev, datestr, savedir), v)
