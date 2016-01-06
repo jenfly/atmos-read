@@ -13,7 +13,7 @@ import merra
 savedir = atm.homedir() + '/datastore/merra/daily/'
 filestr = '%smerra_%s_ML%02d_40-120E_60S-60N_%d%02d.nc'
 
-varnm = 'T'
+varnms = ['T', 'H', 'QV', 'V']
 years = range(1979, 2015)
 months = [4, 5, 6, 7, 8, 9]
 
@@ -23,8 +23,9 @@ ysub = '[60:2:301]'
 
 for year in years:
     for month in months:
-        savefile = filestr % (savedir, varnm, lev, year, month)
-        var = merra.read_daily_eta(varnm, lev, year, month, concat_dim='TIME',
-                                   xsub=xsub, ysub=ysub)
-        print('Saving to ' + savefile)
-        atm.save_nc(savefile, var)
+        for varnm in varnms:
+            savefile = filestr % (savedir, varnm, lev, year, month)
+            var = merra.read_daily_eta(varnm, lev, year, month,
+                                       concat_dim='TIME', xsub=xsub, ysub=ysub)
+            print('Saving to ' + savefile)
+            atm.save_nc(savefile, var)
