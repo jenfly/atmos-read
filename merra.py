@@ -110,7 +110,7 @@ def get_dataset(var_id, time_res='daily', default='p'):
 def read_daily(var_ids, year, month, days=None, concat_dim='TIME',
                subset1=(None, None, None), subset2=(None, None, None),
                verbose=True):
-    """Return MERRA daily data for selected variable(s).
+    """Return MERRA daily pressure-level data for selected variable(s).
 
     Reads daily MERRA data from OpenDAP urls and concatenates into a
     single DataArray or Dataset for the selected days of the month.
@@ -170,6 +170,66 @@ def read_daily(var_ids, year, month, days=None, concat_dim='TIME',
     data = atm.load_concat(paths, var_nms, concat_dim, subset1, subset2,
                            verbose)
     return data
+
+
+# ----------------------------------------------------------------------
+def read_daily_eta(var_id, level, year, month, days=None, concat_dim='TIME',
+                   xsub='[330:2:450]', ysub='[60:2:301]', verbose=True):
+    """Return MERRA daily eta-level data for a single variable.
+
+    Reads a single eta level of daily MERRA data from OpenDAP urls and
+    concatenates into a DataArray for the selected days of the month.
+
+    Parameters
+    ----------
+    var_id : str
+        Variable ID.  Can be generic ID from the list below, in which
+        case get_varname() is called to get the specific ID for MERRA. Or
+        var_id can be the exact name as it appears in MERRA data files.
+        Generic IDs:
+          {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
+    level : int
+        Eta level to extract (0-71).  Level 71 is near-surface and level 0
+        is the top of atmosphere.
+    year, month : int
+        Numeric year and month (1-12).
+    days : list of ints, optional
+       Subset of days to read. If None, all days are included.
+    concat_dim : str, optional
+        Name of dimension for concatenation.
+    xsub, ysub : str, optional
+        Indices of longitude and latitude subsets to extract.
+    verbose : bool, optional
+        If True, print updates while processing files.
+
+    Returns
+    -------
+    data : xray.DataArray or xray.Dataset
+        Daily data (3-hourly or hourly) for the month or a selected
+        subset of days.
+    """
+
+    varnm = get_varname(var_id)
+    tsub = '[0:1:3]'
+    zsub = '[%d:1:%d]' % (level, level)
+
+    def datafile(year, mon, day, varnm, xsub, ysub, zsub, tsub):
+        basedir = ('http://goldsmr3.sci.gsfc.nasa.gov:80/opendap/MERRA/'
+                   'MAI6NVANA.5.2.0/')
+        url = ('%s%d/%02d/MERRA100.prod.assim.inst6_3d_ana_Nv.%d%02d%02d.hdf'
+               '?%s%s%s%s%s,XDim%s,YDim%s,Height%s,TIME%s') % (basedir, year,
+               mon, year, mon, day, varnm, tsub, zsub, ysub, xsub, xsub, ysub,
+               zsub, tsub)
+        return url
+
+    if days is None:
+        days = range(1, atm.days_this_month(year, month) + 1)
+    urls = [datafile(year, month, day, varnm, xsub, ysub, zsub, tsub) for day
+            in atm.makelist(days)]
+
+    var = atm.load_concat(urls, varnm, concat_dim, verbose=verbose)
+
+    return var
 
 
 # ----------------------------------------------------------------------
