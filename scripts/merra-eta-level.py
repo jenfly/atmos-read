@@ -13,7 +13,7 @@ import merra
 savedir = atm.homedir() + '/datastore/merra/daily/'
 filestr = '%smerra_%s_ML%02d_40-120E_60S-60N_%d%02d.nc'
 
-varnms = ['T', 'H', 'QV', 'V']
+varnms = ['T', 'PS', 'DELP', 'QV', 'V']
 years = range(1979, 2015)
 months = [4, 5, 6, 7, 8, 9]
 

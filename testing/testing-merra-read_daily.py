@@ -16,18 +16,15 @@ lon1, lon2 = 60, 100
 lat1, lat2 = -60, 60
 
 days=None
-u = read_daily('u', year, month, days, subset1=('lat', lat1, lat2),
-               subset2=('lon', lon1, lon2))
+subset_dict = {'lat' : (lat1, lat2), 'lon' : (lon1, lon2)}
+u = read_daily('u', year, month, days, subset_dict=subset_dict)
 
 days=5
-u2 = read_daily('u', year, month, days, subset1=('lat', lat1, lat2),
-                subset2=('lon', lon1, lon2))
+u2 = read_daily('u', year, month, days, subset_dict=subset_dict)
 
 days = np.arange(10,13)
-u3 = read_daily('u', year, month, days, subset1=('lat', lat1, lat2),
-                subset2=('lon', lon1, lon2))
+u3 = read_daily('u', year, month, days, subset_dict=subset_dict)
 
 # Multiple variables
 days = [10, 11]
-ds = read_daily(['u', 'v', 'T'], year, month, days,
-                subset1=('lat', lat1, lat2), subset2=('lon', lon1, lon2))
+ds = read_daily(['u', 'v', 'T'], year, month, days, subset_dict=subset_dict)

@@ -19,10 +19,10 @@ savedir = '/home/jennifer/datastore/merra/daily/'
 def filename(varname, datestr, savedir):
     return savedir + 'merra_' + varname + '_' + datestr + '.nc'
 
-u = merra.load_daily(year, month, 'u', subset1=('plev', 200, 200))
+u = merra.load_daily(year, month, 'u', subset_dict={'plev' : (200, 200)})
 atm.save_nc(filename('u200', datestr, savedir), u)
 
-v = merra.load_daily(year, month, 'v', subset1=('plev', 200, 200))
+v = merra.load_daily(year, month, 'v', subset_dict={'plev' : (200, 200)})
 atm.save_nc(filename('v200', datestr, savedir), v)
 
 # ----------------------------------------------------------------------
@@ -80,5 +80,3 @@ plt.title('MFC')
 # ds3 = xray.open_dataset(url3)
 #
 # precip = ds3['PRECTOT']
-
-

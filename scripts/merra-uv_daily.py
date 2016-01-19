@@ -20,12 +20,13 @@ def filename(varname, plev, datestr, savedir):
     print('Saving to ' + filen)
     return filen
 
+subset_dict = {'plev' : (plev, plev)}
 for year in years:
     for month in months:
         datestr = '%d%02d' % (year, month)
 
-        u = merra.read_daily('u', year, month, subset1=('plev', plev, plev))
+        u = merra.read_daily('u', year, month, subset_dict=subset_dict)
         atm.save_nc(filename('u', plev, datestr, savedir), u)
 
-        v = merra.read_daily('v', year, month, subset1=('plev', plev, plev))
+        v = merra.read_daily('v', year, month, subset_dict=subset_dict)
         atm.save_nc(filename('v', plev, datestr, savedir), v)
