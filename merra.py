@@ -523,54 +523,64 @@ def extract_date(filename, width, ending='.hdf'):
 
 
 # ----------------------------------------------------------------------
-def merra_urls(dataset='p_monthly'):
+def merra_urls(years, vertical='P', res='C', time_kind='I', kind='ASM',
+               monthly=False):
     """Return dict of OpenDAP urls for MERRA data.
 
     Parameters
     ----------
-    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily'}
-
+    years : list or np.ndarray
+        List of years to extract urls for.
+    vertical : {'P', 'X', 'V', 'E'}, optional
+        Vertical location : on pressure levels (P), 2-D (X), model
+        layers (V), or model layer edges (E).
+    res : {'N', 'C'}, optional
+        Horizontal resolution: native (N) or coarse (C).
+    time_kind : {'I', 'T'}, optional
+        Instantaneous (I) or time-averaged (T) diagnostics.
+    kind : {'ASM', 'SLV', 'FLX', 'RAD'}, optional
+        Type of dataset: assimilated 3-d (ASM), atmospheric single-level
+        (SLV), surface turbulent fluxes (FLX), or surface and TOA
+        radiation fluxes (RAD).
+    monthly : bool, optional
+        If True, extract urls for monthly data, otherwise daily data.
     Returns
     -------
     urls : dict of date:url for each date in the dataset
     """
 
-    dataset = dataset.lower()
+    # Make dicts of years and months
+    yearvals = years
     years = {}
-    for y in range(1979,2015):
+    for y in yearvals:
         years[y] = '%d' % y
     months = {}
     for m in range(1,13):
         months[m] = '%02d' % m
 
-    rootdir_3d = 'http://goldsmr3.sci.gsfc.nasa.gov/opendap/'
-    rootdir_2d = 'http://goldsmr2.sci.gsfc.nasa.gov/opendap/'
+    if vertical.upper() == 'X':
+        basedir = 'http://goldsmr2.sci.gsfc.nasa.gov/opendap/'
+        nhrs = 1
+    else:
+        basedir = 'http://goldsmr3.sci.gsfc.nasa.gov/opendap/'
+        nhrs = 3
 
-    kinds = []
-    basedirs = {}
-    urls = {}
+    if monthly:
+        basedir = basedir + 'MERRA_MONTHLY/'
+    else:
+        basedir = basedir + 'MERRA/'
 
-    # Info for each dataset
-    # ---------------------
-    # Monthly pressure-level data
-    kind = 'p_monthly'
-    kinds.append(kind)
-    basedirs[kind] = rootdir_3d + 'MERRA_MONTHLY/MAIMCPASM.5.2.0/'
+    if time_kind.upper() == 'I':
+        basedir = basedir + 'MAI'
+    else:
+        basedir = basedir + 'MAT'
 
-    # Monthly surface fluxes
-    kind = 'sfc_monthly'
-    kinds.append(kind)
-    basedirs[kind] = rootdir_2d + 'MERRA_MONTHLY/MATMNXFLX.5.2.0/'
+    if monthly:
+        basedir = basedir + 'M'
+    else:
+        basedir = basedir + '%d' % nhrs
 
-    # Daily pressure-level data (3-hourly)
-    kind = 'p_daily'
-    kinds.append(kind)
-    basedirs[kind] = rootdir_3d + 'MERRA/MAI3CPASM.5.2.0/'
-
-    # Daily surface fluxes (hourly)
-    kind = 'sfc_daily'
-    kinds.append(kind)
-    basedirs[kind] = rootdir_2d + 'MERRA/MAT1NXFLX.5.2.0/'
+    basedir = basedir + (res + vertical + kind).upper() + '.5.2.0/'
 
     # Helper function to make monthly urls
     def monthly_urls(basedir):
@@ -600,12 +610,10 @@ def merra_urls(dataset='p_monthly'):
         return url_dict
 
     # Extract urls
-    if dataset in ['p_monthly', 'sfc_monthly']:
-        urls = monthly_urls(basedirs[dataset])
-    elif dataset in ['p_daily', 'sfc_daily']:
-        urls = daily_urls(basedirs[dataset])
+    if monthly:
+        urls = monthly_urls(basedir)
     else:
-        raise ValueError('Invalid dataset ' + dataset)
+        urls = daily_urls(basedir)
 
     return urls
 
@@ -615,9 +623,19 @@ def save_urls(filestart='data/merra_urls_',
               keys=['p_monthly', 'sfc_monthly', 'p_daily', 'sfc_daily']):
     """Save lists of MERRA urls."""
 
+    years = range(1979, 2015)
+
     for key in keys:
         print('*********************\n' + key)
         filename = filestart + key + '.csv'
+
+        if key.startswith('p'):
+            vertical, res, time_kind, kind = 'P', 'C', 'I', 'ASM'
+        else:
+            vertical, res, time_kind, kind = 'X', 'N', 'T', 'FLX'
+        monthly =  key.endswith('monthly')
+
+        urls = merra_urls(years, vertical, res, time_kind, kind, monthly)
         urls = merra_urls(key)
         atm.print_odict(urls)
 
