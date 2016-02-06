@@ -19,7 +19,8 @@ def filename(year, varnm, subset_str):
     return filn
 
 # MERRA daily surface fluxes
-varnms = ['EFLUX', 'HFLUX', 'EVAP']
+#varnms = ['EFLUX', 'HFLUX', 'EVAP']
+varnms = ['HFLUX', 'EVAP']
 years = range(1979, 2015)
 months = range(1, 13)
 lon1, lon2 = 40, 120
