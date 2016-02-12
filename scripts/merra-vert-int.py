@@ -21,7 +21,7 @@ months = np.arange(1, 13)
 # varnms = ['TQV']
 # vertical, res, time_kind, kind = 'X', 'N', 'I', 'INT'
 # varnms = ['UFLXCPT', 'VFLXCPT', 'UFLXPHI', 'VFLXPHI', 'UFLXQV', 'VFLXQV']
-varnms = ['UFLXQV', 'VFLXQV']
+varnms = ['DQVDT_ANA']
 vertical, res, time_kind, kind = 'X', 'N', 'T', 'INT'
 subset_dict = {'lon' : (40, 120)}
 subset = '_40E-120E_90S-90N'
@@ -31,6 +31,8 @@ nperday = 24
 def savefile(datadir, varnm, year, month, subset):
     return '%smerra_%s%s_%d%02d.nc' % (datadir, varnm, subset, year, month)
 
+def yrlyfile(datadir, varnm, year, subset):
+    return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
 
 for varnm in varnms:
     for year in years:
@@ -47,16 +49,23 @@ for varnm in varnms:
             print('Saving to ' + filenm)
             atm.save_nc(filenm, var)
 
-# ----------------------------------------------------------------------
-# Consolidate monthly files into yearly files
-
-def yrlyfile(datadir, varnm, year, subset):
-    return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
-
-for varnm in varnms:
-    for year in years:
+        # Consolidate monthly files into yearly files
         files = [savefile(datadir, varnm, year, m, subset) for m in months]
         var = atm.load_concat(files, varnm, concat_dim='day')
         filenm = yrlyfile(datadir, varnm, year, subset)
         print('Saving to ' + filenm)
         atm.save_nc(filenm, var)
+
+# ----------------------------------------------------------------------
+# # Consolidate monthly files into yearly files
+#
+# def yrlyfile(datadir, varnm, year, subset):
+#     return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
+#
+# for varnm in varnms:
+#     for year in years:
+#         files = [savefile(datadir, varnm, year, m, subset) for m in months]
+#         var = atm.load_concat(files, varnm, concat_dim='day')
+#         filenm = yrlyfile(datadir, varnm, year, subset)
+#         print('Saving to ' + filenm)
+#         atm.save_nc(filenm, var)
