@@ -13,7 +13,9 @@ import merra
 # ----------------------------------------------------------------------
 # Read daily data and calculate d/dp
 
-varnm = 'U'
+#varnm = 'U'
+varnm = 'OMEGA'
+save_var = True     # True to save var and dvar_dp, False to save only dvar_dp
 lon1, lon2 = 40, 120
 plev = 200
 pmin, pmax = 100, 300
@@ -24,9 +26,14 @@ datadir = atm.homedir() + 'datastore/merra/daily/'
 years = np.arange(1979, 2015)
 months = np.arange(1, 13)
 
-def savefile(datadir, varnm, plev, subset, year, month):
-    filestr = '%smerra_D%sDP%d%s_%d%02d.nc'
+def monthfile(datadir, varnm, plev, subset, year, month):
+    filestr = '%smerra_%s%d%s_%d%02d.nc'
     return filestr % (datadir, varnm, plev, subset, year, month)
+
+def savemonth(var, datadir, varnm, plev, subset, year, month):
+    filenm = monthfile(datadir, varnm, plev, subset, year, month)
+    print('Saving to ' + filenm)
+    atm.save_nc(filenm, var)
 
 def daily_calc(varnm, year, month, day, urls, subset_dict, plev):
     """Read daily data from file, compute d/dp and extract pressure level.
@@ -42,49 +49,47 @@ def daily_calc(varnm, year, month, day, urls, subset_dict, plev):
     pres = var['Height']
     pres = atm.pres_convert(pres, pres.attrs['units'], 'Pa')
     dvar_dp = atm.gradient(var, pres, axis=0)
-    # dp = np.gradient(pres)
-    # dims = var.shape
-    # dvar_dp = np.nan * var
-    # for i in range(dims[1]):
-    #     for j in range(dims[2]):
-    #         dvar_dp.values[:, i, j] = np.gradient(var[:, i, j], dp)
-
     dvar_dp = atm.subset(dvar_dp, {'Height' : (plev, plev)}, copy=False)
+    dvar_dp = atm.squeeze(dvar_dp)
     attrs['long_name'] = 'd/dp of ' + attrs['long_name']
     attrs['standard_name'] = 'd/dp of ' + attrs['standard_name']
     attrs['units'] = ('(%s)/Pa' % attrs['units'])
     dvar_dp.name = 'D%sDP' % name
     dvar_dp.attrs = attrs
-    return dvar_dp
+    var = atm.subset(var, {'Height' : (plev, plev)}, copy=False)
+    var = atm.squeeze(var)
+
+    # Add day dimension
+    jday = atm.mmdd_to_jday(month, day, year)
+    var = atm.expand_dims(var, 'day', jday, axis=0)
+    dvar_dp = atm.expand_dims(dvar_dp, 'day', jday, axis=0)
+
+    return var, dvar_dp
+
+def consolidate_year(datadir, varnm, plev, subset, year, months):
+    files = [monthfile(datadir, varnm, plev, subset, year, m) for m in months]
+    var = atm.load_concat(files, varnm, concat_dim='day')
+    filenm = '%smerra_%s%d%s_%d.nc' % (datadir, varnm, plev, subset, year)
+    print('Saving to ' + filenm)
+    atm.save_nc(filenm, var)
 
 for year in years:
     urls = merra.merra_urls([year])
     for month in months:
         days = np.arange(1, atm.days_this_month(year, month) + 1)
         for d, day in enumerate(days):
-            var_in = daily_calc(varnm, year, month, day, urls, subset_dict,
-                                plev)
-            jday = atm.mmdd_to_jday(month, day,year)
-            var_in = atm.expand_dims(var_in, 'day', jday, axis=0)
+            var_in, dvar_in = daily_calc(varnm, year, month, day, urls,
+                                         subset_dict, plev)
             if d == 0:
-                var = var_in
+                var, dvar = var_in, dvar_in
             else:
                 var = xray.concat([var, var_in], dim='day')
-        var = atm.squeeze(var)
-        filenm = savefile(datadir, varnm, plev, subset, year, month)
-        print('Saving to ' + filenm)
-        atm.save_nc(filenm, var)
+                dvar = xray.concat([dvar, dvar_in], dim='day')
+        if save_var:
+            savemonth(var, datadir, varnm, plev, subset, year, month)
+        savemonth(dvar, datadir, 'D%sDP' % varnm, plev, subset, year, month)
 
-# ----------------------------------------------------------------------
-# Consolidate monthly files into yearly files
-
-def yrlyfile(datadir, varnm, year, subset):
-    return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
-
-varname = 'D%sDP%d' % (varnm, plev)
-for year in years:
-    files = [savefile(datadir, varnm, plev, subset, year, m) for m in months]
-    var = atm.load_concat(files, 'D%sDP' % varnm, concat_dim='day')
-    filenm = yrlyfile(datadir, varname, year, subset)
-    print('Saving to ' + filenm)
-    atm.save_nc(filenm, var)
+    # Consolidate monthly files into yearly files
+    if save_var:
+        consolidate_year(datadir, varnm, plev, subset, year, months)
+    consolidate_year(datadir, 'D%sDP' % varnm, plev, subset, year, months)
