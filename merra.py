@@ -20,6 +20,11 @@ sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 import atmos as atm
 from atmos import print_if
 
+
+# ======================================================================
+# Lists of variable IDs and OpenDAP urls for data files
+# ======================================================================
+
 # ----------------------------------------------------------------------
 def get_varname(var_id):
     """Return the variable name in MERRA naming convention.
@@ -40,7 +45,9 @@ def get_varname(var_id):
 
 
 # ----------------------------------------------------------------------
-def get_url_opts(var_id, version='merra'):
+def url_opts(var_id, version='merra'):
+    """Return the dataset options to determine URLs for a variable.
+    """
 
     varnm = get_varname(var_id)
 
@@ -67,71 +74,135 @@ def get_url_opts(var_id, version='merra'):
         optkeys[nm] = 'asm_i'
 
     vertical, res, time_kind, kind = optlist[optkeys[varnm]]
-    opts = {'vertical' : vertical, 'res' : res, 'time_kind' : time_kind,
-            'kind' : kind}
+    opts = {'version' : version, 'vertical' : vertical, 'res' : res,
+            'time_kind' : time_kind, 'kind' : kind}
 
     return opts
 
 
 # ----------------------------------------------------------------------
-def get_dataset(var_id, time_res='daily', default='p'):
-    """Return the dataset ID corresponding to the variable.
+def scrape_url(url, ending='.hdf.html', cut='.html'):
+    """Scrape url for links with specified ending string."""
+
+    soup = BeautifulSoup(urllib2.urlopen(url))
+    links = []
+    for link in soup.find_all('a'):
+        links.append(link.get('href'))
+
+    links = list(set([s for s in links if s.endswith(ending)]))
+    links = [s.split(cut)[0] for s in links]
+    return links
+
+
+# ----------------------------------------------------------------------
+def extract_date(filename, width, ending='.hdf'):
+    """Extract yyyymmdd or yyyymm from file name."""
+    s = filename.split(ending)[0]
+    date = s[-width:]
+    return date
+
+
+# ----------------------------------------------------------------------
+def get_urls(years, months=None, version='merra', varnm='U', opts=None):
+    """Return dict of OpenDAP urls for MERRA and MERRA-2 daily data.
 
     Parameters
     ----------
-    var_id : str
-        Variable name.  Can be a generic ID as input to get_varname(),
-        or a specific name from MERRA data files.
-    time_res : {'daily', 'monthly'}
-        Time resolution of dataset.
-    default : {'p', 'sfc'}
-        If the variable is in both pressure-level and surface flux
-        data, then default to this dataset type.
+    years : list or np.ndarray
+        List of years to extract urls for.
+    months: list or np.ndarray, optional
+        List of months to extract urls for.  If None, then all months (1-12)
+        are extracted.
+    version : {'merra', 'merra2'}, optional
+        Select MERRA or MERRA-2 data.
+    varnm : str, optional
+        Variable ID.  If None, then the options in the input parameter opts
+        are used. If not None, then opts are determined using url_opts(varnm)
+        and override any value provided to input opts.
+    opts : dict, optional
+        Provide the dataset options rather than calling url_opts(varnm).
+        The key : value pairs of opts are:
+            'vertical' : 'P', 'X', 'V', or 'E'
+                Vertical location : on pressure levels (P), 2-D (X), model
+                layers (V), or model layer edges (E).
+            'res' : 'N' or 'C'
+                Horizontal resolution: native (N) or coarse (C).
+            'time_kind' : 'I' or 'T'
+                Instantaneous (I) or time-averaged (T) diagnostics.
+            'kind' : 'ASM', 'SLV', 'FLX', or 'RAD'
+                Type of dataset: assimilated 3-d (ASM), atmospheric single-level
+                (SLV), surface turbulent fluxes (FLX), or surface and TOA
+                radiation fluxes (RAD).
 
     Returns
     -------
-    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily'}
-        Name of the dataset containing the variable (pressure-level
-        or surface fluxes), at the specified time resolution.
+    urls : dict of date:url for each date in the dataset
     """
 
-    var = get_varname(var_id)
+    if varnm is not None:
+        opts = url_opts(varnm, version)
 
-    p_vars = [u'SLP', u'PS', u'PHIS', u'H', u'O3', u'QV', u'QL', u'QI', u'RH',
-              u'T', u'U', u'V', u'EPV', u'OMEGA', u'Cov_U_V', u'Cov_U_T',
-              u'Cov_V_T', u'Cov_U_H', u'Cov_V_H', u'Cov_U_QV', u'Cov_V_QV',
-              u'Cov_U_QL', u'Cov_V_QL', u'Cov_U_QI', u'Cov_V_QI', u'Cov_U_EPV',
-              u'Cov_V_EPV', u'Cov_U_O3', u'Cov_V_O3', u'Cov_OMEGA_U',
-              u'Cov_OMEGA_V', u'Cov_OMEGA_T', u'Cov_OMEGA_QV', u'Cov_OMEGA_QL',
-              u'Cov_OMEGA_QI', u'Cov_OMEGA_O3', u'vsts', u'Var_SLP', u'Var_PS',
-              u'Var_PHIS', u'Var_H', u'Var_O3', u'Var_QV', u'Var_QL', u'Var_QI',
-              u'Var_RH', u'Var_T', u'Var_U', u'Var_V', u'Var_EPV', u'Var_OMEGA']
+    # Dataset options
+    version = version.lower()
+    time_kind = opts['time_kind'].upper()
+    res = opts['res'].upper()
+    vertical = opts['vertical'].upper()
+    kind = opts['kind'].upper()
 
-    sfc_vars = [u'EFLUX', u'EVAP', u'HFLUX', u'TAUX', u'TAUY', u'TAUGWX',
-                u'TAUGWY', u'PBLH', u'DISPH', u'BSTAR', u'USTAR', u'TSTAR',
-                u'QSTAR', u'RI', u'Z0H', u'Z0M', u'HLML', u'TLML', u'QLML',
-                u'ULML', u'VLML', u'RHOA', u'SPEED', u'CDH', u'CDQ', u'CDM',
-                u'CN', u'TSH', u'QSH', u'FRSEAICE', u'PRECANV', u'PRECCON',
-                u'PRECLSC', u'PRECSNO', u'PRECTOT', u'PGENTOT', u'Var_EFLUX',
-                u'Var_EVAP', u'Var_HFLUX', u'Var_TAUX', u'Var_TAUY',
-                u'Var_TAUGWX', u'Var_TAUGWY', u'Var_PBLH', u'Var_DISPH',
-                u'Var_BSTAR', u'Var_USTAR', u'Var_TSTAR', u'Var_QSTAR',
-                u'Var_RI', u'Var_Z0H', u'Var_Z0M', u'Var_HLML', u'Var_TLML',
-                u'Var_QLML', u'Var_ULML', u'Var_VLML', u'Var_RHOA',
-                u'Var_SPEED', u'Var_CDH', u'Var_CDQ', u'Var_CDM', u'Var_CN',
-                u'Var_TSH', u'Var_QSH', u'Var_PRECANV', u'Var_PRECCON',
-                u'Var_PRECLSC', u'Var_PRECSNO', u'Var_PRECTOT', u'Var_PGENTOT']
-
-    if var in p_vars and var in sfc_vars:
-        dataset = default + '_' + time_res
-    elif var in p_vars:
-        dataset = 'p_' + time_res
-    elif var in sfc_vars:
-        dataset = 'sfc_' + time_res
+    # Make dicts of years and months
+    yearvals = atm.makelist(years)
+    years = {y : '%d' % y for y in yearvals}
+    if months is None:
+        monthvals = range(1, 13)
     else:
-        raise ValueError('var_id ' + var_id + ' not found.')
+        monthvals = atm.makelist(months)
+    months = {m : '%02d' % m for m in monthvals}
 
-    return dataset
+    urlstr = 'http://goldsmr%d.sci.gsfc.nasa.gov/opendap/%s'
+    servers = {'merra_X' : urlstr % (2, 'MERRA/MA'),
+               'merra' : urlstr % (3, 'MERRA/MA'),
+               'merra2_X' : urlstr % (4, 'MERRA2/M2'),
+               'merra2' : urlstr % (5, 'MERRA2/M2')}
+    version_num = {'merra' : '.5.2.0/', 'merra2' : '.5.12.4/'}
+    fmt = {'merra' : '.hdf', 'merra2' : '.nc4'}
+
+    if vertical == 'X':
+        time_res = '1'
+        server_key = version + '_X'
+    else:
+        time_res = '3'
+        server_key = version
+
+    try:
+        basedir = servers[server_key]
+        vnum = version_num[version]
+    except KeyError:
+        raise ValueError('Invalid version %s.  Options are: merra, merra2.' %
+                         version)
+
+    basedir = basedir + time_kind + time_res + res + vertical + kind + vnum
+    print('Scraping filenames from ' + basedir)
+
+    # Helper function to make daily urls
+    def daily_urls(basedir, years, months, fmt):
+        url_dict = collections.OrderedDict()
+        for y in years:
+            for m in months:
+                print(years[y] + months[m])
+                dirname = basedir + years[y] + '/' + months[m] + '/'
+                files = scrape_url(dirname + 'contents.html',
+                                   ending=fmt + '.html')
+                files.sort()
+                dates = [extract_date(nm, width=8, ending=fmt) for nm in files]
+                for date, nm in zip(dates, files):
+                    url_dict[date] = dirname + nm
+        return url_dict
+
+    # Extract urls
+    urls = daily_urls(basedir, years, months, fmt[version])
+
+    return urls
+
 
 
 # ----------------------------------------------------------------------
@@ -477,123 +548,67 @@ def calc_fluxes(year, month,
     return data
 
 
+
+
 # ======================================================================
-# Lists of OpenDAP urls for data files
+# DEPRECATED
 # ======================================================================
-
 # ----------------------------------------------------------------------
-def scrape_url(url, ending='.hdf.html', cut='.html'):
-    """Scrape url for links with specified ending string."""
-
-    soup = BeautifulSoup(urllib2.urlopen(url))
-    links = []
-    for link in soup.find_all('a'):
-        links.append(link.get('href'))
-
-    links = list(set([s for s in links if s.endswith(ending)]))
-    links = [s.split(cut)[0] for s in links]
-    return links
-
-
-# ----------------------------------------------------------------------
-def extract_date(filename, width, ending='.hdf'):
-    """Extract yyyymmdd or yyyymm from file name."""
-    s = filename.split(ending)[0]
-    date = s[-width:]
-    return date
-
-
-# ----------------------------------------------------------------------
-
-
-# ----------------------------------------------------------------------
-def get_urls(years, months=None, version='merra', vertical='P', res='C',
-               time_kind='I', kind='ASM'):
-    """Return dict of OpenDAP urls for MERRA and MERRA-2 daily data.
+def get_dataset(var_id, time_res='daily', default='p'):
+    """Return the dataset ID corresponding to the variable.
 
     Parameters
     ----------
-    years : list or np.ndarray
-        List of years to extract urls for.
-    months: list or np.ndarray, optional
-        List of months to extract urls for.  If None, then all months (1-12)
-        are extracted.
-    version : {'merra', 'merra2'}, optional
-        Select MERRA or MERRA-2 data.
-    vertical : {'P', 'X', 'V', 'E'}, optional
-        Vertical location : on pressure levels (P), 2-D (X), model
-        layers (V), or model layer edges (E).
-    res : {'N', 'C'}, optional
-        Horizontal resolution: native (N) or coarse (C).
-    time_kind : {'I', 'T'}, optional
-        Instantaneous (I) or time-averaged (T) diagnostics.
-    kind : {'ASM', 'SLV', 'FLX', 'RAD'}, optional
-        Type of dataset: assimilated 3-d (ASM), atmospheric single-level
-        (SLV), surface turbulent fluxes (FLX), or surface and TOA
-        radiation fluxes (RAD).
+    var_id : str
+        Variable name.  Can be a generic ID as input to get_varname(),
+        or a specific name from MERRA data files.
+    time_res : {'daily', 'monthly'}
+        Time resolution of dataset.
+    default : {'p', 'sfc'}
+        If the variable is in both pressure-level and surface flux
+        data, then default to this dataset type.
 
     Returns
     -------
-    urls : dict of date:url for each date in the dataset
+    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily'}
+        Name of the dataset containing the variable (pressure-level
+        or surface fluxes), at the specified time resolution.
     """
 
-    # Housekeeping
-    version = version.lower()
-    time_kind = time_kind.upper()
-    res = res.upper()
-    vertical = vertical.upper()
-    kind = kind.upper()
+    var = get_varname(var_id)
 
-    # Make dicts of years and months
-    yearvals = atm.makelist(years)
-    years = {y : '%d' % y for y in yearvals}
-    if months is None:
-        monthvals = range(1, 13)
+    p_vars = [u'SLP', u'PS', u'PHIS', u'H', u'O3', u'QV', u'QL', u'QI', u'RH',
+              u'T', u'U', u'V', u'EPV', u'OMEGA', u'Cov_U_V', u'Cov_U_T',
+              u'Cov_V_T', u'Cov_U_H', u'Cov_V_H', u'Cov_U_QV', u'Cov_V_QV',
+              u'Cov_U_QL', u'Cov_V_QL', u'Cov_U_QI', u'Cov_V_QI', u'Cov_U_EPV',
+              u'Cov_V_EPV', u'Cov_U_O3', u'Cov_V_O3', u'Cov_OMEGA_U',
+              u'Cov_OMEGA_V', u'Cov_OMEGA_T', u'Cov_OMEGA_QV', u'Cov_OMEGA_QL',
+              u'Cov_OMEGA_QI', u'Cov_OMEGA_O3', u'vsts', u'Var_SLP', u'Var_PS',
+              u'Var_PHIS', u'Var_H', u'Var_O3', u'Var_QV', u'Var_QL', u'Var_QI',
+              u'Var_RH', u'Var_T', u'Var_U', u'Var_V', u'Var_EPV', u'Var_OMEGA']
+
+    sfc_vars = [u'EFLUX', u'EVAP', u'HFLUX', u'TAUX', u'TAUY', u'TAUGWX',
+                u'TAUGWY', u'PBLH', u'DISPH', u'BSTAR', u'USTAR', u'TSTAR',
+                u'QSTAR', u'RI', u'Z0H', u'Z0M', u'HLML', u'TLML', u'QLML',
+                u'ULML', u'VLML', u'RHOA', u'SPEED', u'CDH', u'CDQ', u'CDM',
+                u'CN', u'TSH', u'QSH', u'FRSEAICE', u'PRECANV', u'PRECCON',
+                u'PRECLSC', u'PRECSNO', u'PRECTOT', u'PGENTOT', u'Var_EFLUX',
+                u'Var_EVAP', u'Var_HFLUX', u'Var_TAUX', u'Var_TAUY',
+                u'Var_TAUGWX', u'Var_TAUGWY', u'Var_PBLH', u'Var_DISPH',
+                u'Var_BSTAR', u'Var_USTAR', u'Var_TSTAR', u'Var_QSTAR',
+                u'Var_RI', u'Var_Z0H', u'Var_Z0M', u'Var_HLML', u'Var_TLML',
+                u'Var_QLML', u'Var_ULML', u'Var_VLML', u'Var_RHOA',
+                u'Var_SPEED', u'Var_CDH', u'Var_CDQ', u'Var_CDM', u'Var_CN',
+                u'Var_TSH', u'Var_QSH', u'Var_PRECANV', u'Var_PRECCON',
+                u'Var_PRECLSC', u'Var_PRECSNO', u'Var_PRECTOT', u'Var_PGENTOT']
+
+    if var in p_vars and var in sfc_vars:
+        dataset = default + '_' + time_res
+    elif var in p_vars:
+        dataset = 'p_' + time_res
+    elif var in sfc_vars:
+        dataset = 'sfc_' + time_res
     else:
-        monthvals = atm.makelist(months)
-    months = {m : '%02d' % m for m in monthvals}
+        raise ValueError('var_id ' + var_id + ' not found.')
 
-    urlstr = 'http://goldsmr%d.sci.gsfc.nasa.gov/opendap/%s'
-    servers = {'merra_X' : urlstr % (2, 'MERRA/MA'),
-               'merra' : urlstr % (3, 'MERRA/MA'),
-               'merra2_X' : urlstr % (4, 'MERRA2/M2'),
-               'merra2' : urlstr % (5, 'MERRA2/M2')}
-    version_num = {'merra' : '.5.2.0/', 'merra2' : '.5.12.4/'}
-    fmt = {'merra' : '.hdf', 'merra2' : '.nc4'}
-
-    if vertical == 'X':
-        time_res = '1'
-        server_key = version + '_X'
-    else:
-        time_res = '3'
-        server_key = version
-
-    try:
-        basedir = servers[server_key]
-        vnum = version_num[version]
-    except KeyError:
-        raise ValueError('Invalid version %s.  Options are: merra, merra2.' %
-                         version)
-
-    basedir = basedir + time_kind + time_res + res + vertical + kind + vnum
-    print('Scraping filenames from ' + basedir)
-
-    # Helper function to make daily urls
-    def daily_urls(basedir, years, months, fmt):
-        url_dict = collections.OrderedDict()
-        for y in years:
-            for m in months:
-                print(years[y] + months[m])
-                dirname = basedir + years[y] + '/' + months[m] + '/'
-                files = scrape_url(dirname + 'contents.html',
-                                   ending=fmt + '.html')
-                files.sort()
-                dates = [extract_date(nm, width=8, ending=fmt) for nm in files]
-                for date, nm in zip(dates, files):
-                    url_dict[date] = dirname + nm
-        return url_dict
-
-    # Extract urls
-    urls = daily_urls(basedir, years, months, fmt[version])
-
-    return urls
+    return dataset
