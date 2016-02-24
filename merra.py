@@ -476,7 +476,10 @@ def extract_date(filename, width, ending='.hdf'):
 
 
 # ----------------------------------------------------------------------
-def merra_urls(years, months=None, version='merra', vertical='P', res='C',
+
+
+# ----------------------------------------------------------------------
+def get_urls(years, months=None, version='merra', vertical='P', res='C',
                time_kind='I', kind='ASM'):
     """Return dict of OpenDAP urls for MERRA and MERRA-2 daily data.
 

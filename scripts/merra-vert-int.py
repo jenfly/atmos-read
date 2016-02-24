@@ -50,9 +50,9 @@ def yrlyfile(datadir, varnm, year, subset):
 
 for varnm in varnms:
     vertical, res, time_kind, kind = opts[varnm]
-    for year in years:        
+    for year in years:
         for month in months:
-            url_dict = merra.merra_urls(year, month, version, vertical, res, 
+            url_dict = merra.merra_urls(year, month, version, vertical, res,
                                         time_kind, kind)
             days = range(1, atm.days_this_month(year, month) + 1)
             jdays = atm.season_days(atm.month_str(month), atm.isleap(year))
@@ -64,7 +64,7 @@ for varnm in varnms:
                                           dayvals=jdays)
             filenm = monthlyfile(datadir, varnm, year, month, subset)
             print('Saving to ' + filenm)
-            atm.save_nc(filenm, var)
+            var.to_dataset().to_netcdf(filenm)
 
         # Consolidate monthly files into yearly files
         files = [monthlyfile(datadir, varnm, year, m, subset) for m in months]
@@ -76,4 +76,3 @@ for varnm in varnms:
         for filenm in files:
             print(filenm)
             os.remove(filenm)
-
