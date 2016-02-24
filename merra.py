@@ -454,53 +454,6 @@ def calc_fluxes(year, month,
 # ======================================================================
 
 # ----------------------------------------------------------------------
-def url_list(dataset, return_dict=True):
-    """Return list of OpenDAP urls for MERRA data files.
-
-    This function reads a .csv file with a list of urls previously
-    scraped from the MERRA website with merra_urls() and saved with
-    save_urls().
-
-    Parameters
-    ----------
-    dataset : {'p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily'} or string
-        If dataset is in the list above, then csv file is assumed to be
-        data/merra_urls_dataset.csv.  If not in the list above, then
-        dataset should be the path of the csv file to read.
-    return_dict : bool, optional
-        If True, then return the urls in an OrderedDict of date:url
-        pairs.  If False, then return urls as a list.
-
-    Returns
-    -------
-    urls : OrderedDict() or list
-        Dict of date:url pairs or list of urls.
-    """
-
-    merradir = atm.homedir() + 'dynamics/python/atmos-read/data/'
-    if dataset in ['p_monthly', 'p_daily', 'sfc_monthly', 'sfc_daily']:
-        filename = merradir + 'merra_urls_' + dataset + '.csv'
-    else:
-        filename = dataset
-
-    df = pd.read_csv(filename, index_col=0)
-    col_name = df.columns[0]
-    dates = df.index.values
-    dates = [str(d) for d in dates]
-    files = df[col_name].values
-    files = [str(f) for f in files]
-
-    if return_dict:
-        urls = collections.OrderedDict()
-        for date, file in zip(dates, files):
-            urls[date] = file
-    else:
-        urls = files
-
-    return urls
-
-
-# ----------------------------------------------------------------------
 def scrape_url(url, ending='.hdf.html', cut='.html'):
     """Scrape url for links with specified ending string."""
 
