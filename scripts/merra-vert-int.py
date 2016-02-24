@@ -36,11 +36,6 @@ if plev is not None:
     subset = '%d' % plev + subset
 time_dim = {'merra' : 'TIME', 'merra2' : 'time'}[version]
 
-opts = {'UFLXQV' : ('X', 'N', 'T', 'INT'), 'VFLXQV' : ('X', 'N', 'T', 'INT'),
-        'UFLXCPT' : ('X', 'N', 'T', 'INT'), 'VFLXCPT' : ('X', 'N', 'T', 'INT'),
-        'UFLXPHI' : ('X', 'N', 'T', 'INT'), 'VFLXPHI' : ('X', 'N', 'T', 'INT'),
-        'DQVDT_ANA' : ('X', 'N', 'T', 'INT'), 'TQV' : ('X', 'N', 'I', 'INT'),
-        'PRECTOT' : ('X', 'N', 'T', 'FLX'), 'EVAP' : ('X', 'N', 'T', 'FLX')}
 
 def monthlyfile(datadir, varnm, year, month, subset):
     return '%smerra_%s%s_%d%02d.nc' % (datadir, varnm, subset, year, month)
@@ -49,11 +44,9 @@ def yrlyfile(datadir, varnm, year, subset):
     return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
 
 for varnm in varnms:
-    vertical, res, time_kind, kind = opts[varnm]
     for year in years:
         for month in months:
-            url_dict = merra.merra_urls(year, month, version, vertical, res,
-                                        time_kind, kind)
+            url_dict = merra.get_urls(year, month, version, varnm)
             days = range(1, atm.days_this_month(year, month) + 1)
             jdays = atm.season_days(atm.month_str(month), atm.isleap(year))
             urls = [url_dict['%d%02d%02d' % (year, month, day)] for day in days]
@@ -71,7 +64,7 @@ for varnm in varnms:
         var = atm.load_concat(files, varnm, concat_dim='day')
         filenm = yrlyfile(datadir, varnm, year, subset)
         print('Saving to ' + filenm)
-        atm.save_nc(filenm, var)
+        var.to_dataset().to_netcdf(filenm)
         print('Deleting monthly files:')
         for filenm in files:
             print(filenm)

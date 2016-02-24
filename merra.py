@@ -47,6 +47,8 @@ def get_varname(var_id):
 # ----------------------------------------------------------------------
 def url_opts(var_id, version='merra'):
     """Return the dataset options to determine URLs for a variable.
+
+    See get_url() documentation for more info.
     """
 
     varnm = get_varname(var_id)
@@ -203,7 +205,9 @@ def get_urls(years, months=None, version='merra', varnm='U', opts=None):
 
     return urls
 
-
+# ======================================================================
+# All functions below need to be revised to work with new get_urls
+# ======================================================================
 
 # ----------------------------------------------------------------------
 def read_daily(var_ids, year, month, days=None, concat_dim='TIME',
