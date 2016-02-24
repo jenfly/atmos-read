@@ -29,20 +29,48 @@ def get_varname(var_id):
     var_id : {'u', 'v', 'omega', 'hgt', 'T', 'q', 'ps', 'evap', 'precip'}
     """
 
-    var_dict = {'u' : 'U',
-                'v' : 'V',
-                'omega' : 'OMEGA',
-                'hgt' : 'H',
-                'T' : 'T',
-                'q' : 'QV',
-                'ps' : 'PS',
-                'evap' : 'EVAP',
+    var_dict = {'u' : 'U', 'v' : 'V', 'omega' : 'OMEGA', 'hgt' : 'H',
+                'T' : 'T', 'q' : 'QV', 'ps' : 'PS', 'evap' : 'EVAP',
                 'precip' : 'PRECTOT'}
 
     if var_id in var_dict:
         return var_dict[var_id]
     else:
         return var_id
+
+
+# ----------------------------------------------------------------------
+def get_url_opts(var_id, version='merra'):
+
+    varnm = get_varname(var_id)
+
+    p_res = {'merra' : 'C', 'merra2' : 'N'}[version]
+
+    optlist = {'int_t' : ('X', 'N', 'T', 'INT'),
+               'int_i' : ('X', 'N', 'I', 'INT'),
+               'flx_t' : ('X', 'N', 'T', 'FLX'),
+               'slv_t' : ('X', 'N', 'T', 'SLV'),
+               'asm_i' : ('P', p_res, 'I', 'ASM')}
+
+    optkeys = {}
+    for nm in ['UFLXQV', 'VFLXQV', 'UFLXCPT', 'VFLXCPT', 'UFLXPHI', 'VFLXPHI',
+               'DQVDT_ANA']:
+        optkeys[nm] = 'int_t'
+    for nm in ['TQV']:
+        optkeys[nm] = 'int_i'
+    for nm in ['PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'ULML', 'VLML', 'QLML',
+               'TLML', 'HLML']:
+        optkeys[nm] = 'flx_t'
+    for nm in ['PS', 'SLP']:
+        optkeys[nm] = 'slv_t'
+    for nm in ['U', 'V', 'OMEGA', 'T', 'QV', 'H']:
+        optkeys[nm] = 'asm_i'
+
+    vertical, res, time_kind, kind = optlist[optkeys[varnm]]
+    opts = {'vertical' : vertical, 'res' : res, 'time_kind' : time_kind,
+            'kind' : kind}
+
+    return opts
 
 
 # ----------------------------------------------------------------------
