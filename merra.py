@@ -613,36 +613,3 @@ def merra_urls(years, months=None, version='merra', vertical='P', res='C',
     urls = daily_urls(basedir, years, months, fmt[version])
 
     return urls
-
-
-# ----------------------------------------------------------------------
-def save_urls(filestart='data/merra_urls_',
-              keys=['p_monthly', 'sfc_monthly', 'p_daily', 'sfc_daily']):
-    """Save lists of MERRA urls."""
-
-    years = range(1979, 2015)
-
-    for key in keys:
-        print('*********************\n' + key)
-        filename = filestart + key + '.csv'
-
-        if key.startswith('p'):
-            vertical, res, time_kind, kind = 'P', 'C', 'I', 'ASM'
-        else:
-            vertical, res, time_kind, kind = 'X', 'N', 'T', 'FLX'
-        monthly =  key.endswith('monthly')
-
-        urls = merra_urls(years, vertical, res, time_kind, kind, monthly)
-        urls = merra_urls(key)
-        atm.print_odict(urls)
-
-        dates, files = [], []
-        for date in urls:
-            dates.append(date)
-            files.append(urls[date])
-
-        df = pd.DataFrame(files, index=pd.Series(dates, name='date'),
-                          columns=['url'])
-
-        print('Writing urls to ' + filename)
-        df.to_csv(filename)
