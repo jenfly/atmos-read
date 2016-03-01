@@ -59,7 +59,8 @@ def url_opts(var_id, version='merra'):
                'int_i' : ('X', 'N', 'I', 'INT'),
                'flx_t' : ('X', 'N', 'T', 'FLX'),
                'slv_t' : ('X', 'N', 'T', 'SLV'),
-               'asm_i' : ('P', p_res, 'I', 'ASM')}
+               'asm_i' : ('P', p_res, 'I', 'ASM'),
+               'udt_t' : ('P', p_res, 'T', 'UDT')}
 
     optkeys = {}
     for nm in ['UFLXQV', 'VFLXQV', 'UFLXCPT', 'VFLXCPT', 'UFLXPHI', 'VFLXPHI',
@@ -74,6 +75,8 @@ def url_opts(var_id, version='merra'):
         optkeys[nm] = 'slv_t'
     for nm in ['U', 'V', 'OMEGA', 'T', 'QV', 'H']:
         optkeys[nm] = 'asm_i'
+    for nm in ['DUDTANA', 'DVDTANA']:
+        optkeys[nm] = 'udt_t'
 
     vertical, res, time_kind, kind = optlist[optkeys[varnm]]
     opts = {'version' : version, 'vertical' : vertical, 'res' : res,
