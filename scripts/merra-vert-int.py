@@ -26,6 +26,9 @@ months = np.arange(1, 13)
 lon1, lon2 = 40, 120
 lat1, lat2 = -90, 90
 
+#nc_format, nc_engine = 'NETCDF4_CLASSIC', 'netcdf4'
+nc_format, nc_engine = None, None
+
 subset_dict = {'lon' : (lon1, lon2), 'lat' : (lat1, lat2)}
 if plev is not None:
     subset_dict['plev'] = plev
@@ -43,6 +46,7 @@ def monthlyfile(datadir, varnm, year, month, subset):
 def yrlyfile(datadir, varnm, year, subset):
     return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
 
+
 for varnm in varnms:
     for year in years:
         for month in months:
@@ -57,7 +61,15 @@ for varnm in varnms:
                                           dayvals=jdays)
             filenm = monthlyfile(datadir, varnm, year, month, subset)
             print('Saving to ' + filenm)
-            var.to_dataset().to_netcdf(filenm)
+            ds = var.to_dataset()
+            ds.to_netcdf(filenm, format=nc_format, engine=nc_engine)
+
+            # Check if output is corrupted
+            with xray.open_dataset(filenm) as ds_check:
+                print(ds[varnm].dims)
+                print(ds.data_vars.keys())
+                if len(ds.data_vars.keys()) > 1:
+                    raise ValueError('Corrupted monthly output file')
 
         # Consolidate monthly files into yearly files
         files = [monthlyfile(datadir, varnm, year, m, subset) for m in months]
