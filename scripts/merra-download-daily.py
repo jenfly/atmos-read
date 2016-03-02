@@ -37,11 +37,22 @@ else:
     lon1, lon2, lat1, lat2 = 40, 120, -90, 90
     sector_lon1, sector_lon2 = None, None
 
+def get_version(datadir):
+    if datadir.find('merra2') >= 0:
+        version = 'merra2'
+    else:
+        version = 'merra'
+    return version
+
 def monthlyfile(datadir, varnm, year, month, subset):
-    return '%smerra_%s%s_%d%02d.nc' % (datadir, varnm, subset, year, month)
+    filenm = '%s%s_%s%s_%d%02d.nc' % (datadir, get_version(datadir), varnm,
+                                      subset, year, month)
+    return filenm
 
 def yrlyfile(datadir, varnm, year, subset):
-    return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
+    filenm = '%s%s_%s%s_%d.nc' % (datadir, get_version(datadir), varnm, 
+                                     subset, year)
+    return filenm
 
 def sector_and_zonal_mean(var, lon1=None, lon2=None, incl_global=True):
     """Return variable mean over sector and (optional) global zonal mean."""
