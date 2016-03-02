@@ -21,6 +21,7 @@ basedir = atm.homedir() + 'datastore/' + version + '/'
 months = np.arange(1, 13)
 
 sector = True
+dp = False
 varnms = ['U']
 plev = None
 
@@ -37,16 +38,21 @@ else:
     lon1, lon2, lat1, lat2 = 40, 120, -90, 90
     sector_lon1, sector_lon2 = None, None
 
-def sector_and_zonal_mean(var, lon1=None, lon2=None, incl_global=True):
-    name = var.name
+def monthlyfile(datadir, varnm, year, month, subset):
+    return '%smerra_%s%s_%d%02d.nc' % (datadir, varnm, subset, year, month)
 
-    # Sector mean
+def yrlyfile(datadir, varnm, year, subset):
+    return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
+
+def sector_and_zonal_mean(var, lon1=None, lon2=None, incl_global=True):
+    """Return variable mean over sector and (optional) global zonal mean."""
+    name = var.name
+    # -- Sector mean
     varbar = atm.dim_mean(var, 'lon', lon1, lon2)
     varbar.name = name + '_' + 'SEC'
     varbar.attrs['varnm'] = name
     varbar.attrs['lonstr'] = atm.latlon_str(lon1, lon2, 'lon')
-
-    # Global zonal mean
+    # -- Global zonal mean
     if incl_global:
         varzon = atm.dim_mean(var, 'lon')
         varzon.name = name + '_' + 'ZON'
@@ -55,33 +61,56 @@ def sector_and_zonal_mean(var, lon1=None, lon2=None, incl_global=True):
         data_out = xray.Dataset({varzon.name : varzon, varbar.name: varbar})
     else:
         data_out = varbar
+    return data_out
 
+def var_and_dp(var, plev=None):
+    return 
+    name = var.name
+    attrs = var.attrs
+    pname = atm.get_coord(var, 'plev', 'name')
+    pdim = atm.get_coord(var, 'plev', 'dim')
+    pres = var[pname]
+    pres = atm.pres_convert(pres, pres.attrs['units'], 'Pa')
+    dvar_dp = atm.gradient(var, pres, axis=pdim)
+    dvar_dp = atm.subset(dvar_dp, {pname : (plev, plev)}, copy=False)
+    dvar_dp = atm.squeeze(dvar_dp)
+    attrs['long_name'] = 'd/dp of ' + var.attrs['long_name']
+    attrs['standard_name'] = 'd/dp of ' + var.attrs['standard_name']
+    attrs['units'] = ('(%s)/Pa' % attrs['units'])
+    dvar_dp.name = 'D%sDP' % name
+    dvar_dp.attrs = attrs
+    var = atm.subset(var, {'Height' : (plev, plev)}, copy=False)
+    var = atm.squeeze(var)
+    data_out = xray.Dataset({var.name : var, dvar_dp.name : dvar_dp})
+    if plev is not None:
+        data_out = atm.subset(data_out, {'plev' : (plev, plev)})
     return data_out
 
 
-def monthlyfile(datadir, varnm, year, month, subset):
-    return '%smerra_%s%s_%d%02d.nc' % (datadir, varnm, subset, year, month)
-
-def yrlyfile(datadir, varnm, year, subset):
-    return '%smerra_%s%s_%d.nc' % (datadir, varnm, subset, year)
-
 def get_opts(version, plev, lon1, lon2, lat1, lat2, sector, sector_lon1,
-             sector_lon2):
+             sector_lon2, dp):
     subset_dict, subset = {}, ''
     if plev is not None:
-        subset_dict['plev'] = (plev, plev)
         subset = '%d' % plev + subset
-    if not sector:
-        func, func_kw = None, None
+        if dp:
+            subset_dict['plev'] = (plev - 100, plev + 100)
+        else:
+            subset_dict['plev'] = (plev, plev)
+    if sector:
+        subset_dict = None
+        func = sector_and_zonal_mean
+        func_kw = {'lon1' : sector_lon1, 'lon2' : sector_lon2}
+    else:
         subset_dict['lon'] = (lon1, lon2)
         subset_dict['lat'] = (lat1, lat2)
         for d1, d2, nm in zip([lon1, lat1], [lon2, lat2], ['lon', 'lat']):
             if d1 is not None:
                 subset = subset + '_' + atm.latlon_str(d1, d2, nm)
-    else:
-        subset_dict = None
-        func = sector_and_zonal_mean
-        func_kw = {'lon1' : sector_lon1, 'lon2' : sector_lon2}
+        if dp:
+            func = var_and_dp
+            func_kw = {'plev' : plev}
+        else:
+            func, func_kw = None, None
 
     time_dim = {'merra' : 'TIME', 'merra2' : 'time'}[version]
     nc_fmt = {'merra' : None, 'merra2' : 'NETCDF4_classic'}[version]
@@ -91,7 +120,7 @@ def get_opts(version, plev, lon1, lon2, lat1, lat2, sector, sector_lon1,
 
 
 opts = get_opts(version, plev, lon1, lon2, lat1, lat2, sector, sector_lon1,
-                sector_lon2)
+                sector_lon2, dp)
 subset_dict, subset, time_dim, nc_fmt, nc_eng, func, func_kw = opts
 
 # Read data and concatenate
@@ -132,8 +161,8 @@ for varnm in varnms:
 
         # Consolidate monthly files into yearly files
         if sector:
-            subset_list = [atm.latlon_str(sector_lon1, sector_lon2, 'lon'),
-                           atm.latlon_str(0, 360, 'lon')]
+            subset_list = ['_' + atm.latlon_str(sector_lon1, sector_lon2, 'lon'),
+                           '_' + atm.latlon_str(0, 360, 'lon')]
         else:
             subset_list = [subset]
         for sub in subset_list:
