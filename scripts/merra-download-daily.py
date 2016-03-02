@@ -70,11 +70,11 @@ def var_and_dp(var, plev=None):
     pres = var[pname]
     pres = atm.pres_convert(pres, pres.attrs['units'], 'Pa')
     dvar_dp = atm.gradient(var, pres, axis=pdim)
-    dvar_dp = atm.subset(dvar_dp, {pname : (plev, plev)}, copy=False)
-    dvar_dp = atm.squeeze(dvar_dp)
+    dvar_dp = atm.subset(dvar_dp, {pname : (plev, plev)}, copy=False, squeeze=True)
     attrs['long_name'] = 'd/dp of ' + var.attrs['long_name']
     attrs['standard_name'] = 'd/dp of ' + var.attrs['standard_name']
     attrs['units'] = ('(%s)/Pa' % attrs['units'])
+    attrs[pname] = plev
     dvar_dp.name = 'D%sDP' % name
     dvar_dp.attrs = attrs
     data_out = xray.Dataset({var.name : var, dvar_dp.name : dvar_dp})
@@ -129,7 +129,7 @@ for varnm in varnms:
             urls = [url_dict['%d%02d%02d' % (year, month, day)] for day in days]
             data = atm.load_concat(urls, varnm, concat_dim=time_dim,
                                    subset_dict=subset_dict, func=func,
-                                   func_kw=func_kw, squeeze=True)
+                                   func_kw=func_kw, squeeze=False)
             nperday = len(data[time_dim]) / len(days)
             data = atm.daily_from_subdaily(data, nperday, dayname='day',
                                            dayvals=jdays)
