@@ -1,3 +1,25 @@
+"""
+Surface fluxes and vertically integrated variables:
+---------------------------------------------------
+plev, sector, dp = None, False, False
+varnms = ['PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'QLML', 'TLML', 'TQV',
+          'UFLXQV', 'VFLXQV', 'VFLXCPT', 'VFLXPHI', 'DQVDT_ANA', 'PS', 'SLP']
+
+3-D variables - lat-lon subsets and sector means
+------------------------------------------------
+plev = 850 | 200
+sector, dp = False, False
+varnms = ['V', 'T', 'QV', 'H', 'DUDTANA']
+
+plev = 850 | 200
+sector, dp = False, True
+varnms = ['U', 'OMEGA']
+
+plev = None
+sector, dp = True, False
+varnms = ['U', 'V', 'OMEGA', 'T', 'QV', 'H', 'DUDTANA']
+"""
+
 import sys
 sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 sys.path.append('/home/jwalker/dynamics/python/atmos-read')
@@ -50,7 +72,7 @@ def monthlyfile(datadir, varnm, year, month, subset):
     return filenm
 
 def yrlyfile(datadir, varnm, year, subset):
-    filenm = '%s%s_%s%s_%d.nc' % (datadir, get_version(datadir), varnm, 
+    filenm = '%s%s_%s%s_%d.nc' % (datadir, get_version(datadir), varnm,
                                      subset, year)
     return filenm
 
