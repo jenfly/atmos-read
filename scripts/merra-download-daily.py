@@ -20,10 +20,9 @@ version, years = 'merra', np.arange(1979, 2016)
 basedir = atm.homedir() + 'datastore/' + version + '/'
 months = np.arange(1, 13)
 
-sector = True
-dp = False
+sector, dp = False, True
+plev = 200
 varnms = ['U']
-plev = None
 
 #sector = False
 #varnms = ['DUDTANA']
@@ -64,7 +63,6 @@ def sector_and_zonal_mean(var, lon1=None, lon2=None, incl_global=True):
     return data_out
 
 def var_and_dp(var, plev=None):
-    return 
     name = var.name
     attrs = var.attrs
     pname = atm.get_coord(var, 'plev', 'name')
@@ -79,8 +77,6 @@ def var_and_dp(var, plev=None):
     attrs['units'] = ('(%s)/Pa' % attrs['units'])
     dvar_dp.name = 'D%sDP' % name
     dvar_dp.attrs = attrs
-    var = atm.subset(var, {'Height' : (plev, plev)}, copy=False)
-    var = atm.squeeze(var)
     data_out = xray.Dataset({var.name : var, dvar_dp.name : dvar_dp})
     if plev is not None:
         data_out = atm.subset(data_out, {'plev' : (plev, plev)})
@@ -133,7 +129,7 @@ for varnm in varnms:
             urls = [url_dict['%d%02d%02d' % (year, month, day)] for day in days]
             data = atm.load_concat(urls, varnm, concat_dim=time_dim,
                                    subset_dict=subset_dict, func=func,
-                                   func_kw=func_kw)
+                                   func_kw=func_kw, squeeze=True)
             nperday = len(data[time_dim]) / len(days)
             data = atm.daily_from_subdaily(data, nperday, dayname='day',
                                            dayvals=jdays)
