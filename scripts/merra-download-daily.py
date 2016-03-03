@@ -1,23 +1,12 @@
 """
-Surface fluxes and vertically integrated variables:
----------------------------------------------------
-plev, sector, dp = None, False, False
-varnms = ['PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'QLML', 'TLML', 'TQV',
-          'UFLXQV', 'VFLXQV', 'VFLXCPT', 'VFLXPHI', 'DQVDT_ANA', 'PS', 'SLP']
-
 3-D variables - lat-lon subsets and sector means
 ------------------------------------------------
-plev = 850 | 200
-sector, dp = False, False
-varnms = ['V', 'T', 'QV', 'H', 'DUDTANA']
-
-plev = 850 | 200
-sector, dp = False, True
-varnms = ['U', 'OMEGA']
-
-plev = None
-sector, dp = True, False
 varnms = ['U', 'V', 'OMEGA', 'T', 'QV', 'H', 'DUDTANA']
+
+Surface fluxes and vertically integrated variables:
+---------------------------------------------------
+varnms = ['PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'QLML', 'TLML', 'TQV',
+          'UFLXQV', 'VFLXQV', 'VFLXCPT', 'VFLXPHI', 'DQVDT_ANA', 'PS', 'SLP']
 """
 
 import sys
@@ -43,10 +32,10 @@ version = 'merra2'
 # years = np.arange(1980, 2016)
 years = [1980, 1981]
 
-basedir = atm.homedir() + 'datastore/' + version + '/daily/'
+datadir = atm.homedir() + 'datastore/' + version + '/daily/'
 months = np.arange(1, 13)
 
-varnms = ['U', 'V', 'PRECTOT']
+varnms = ['U', 'PRECTOT', 'V']
 
 latlon=(-90, 90, 40, 120)
 plevs=(850, 200)
@@ -196,73 +185,11 @@ for year in years:
         # Consolidate monthly files into yearly files
         for nm in data.data_vars:
             files = [get_filename(data[nm], version, datadir, year, m) for m in months]
-            var = atm.load_concat(files, varnm, concat_dim='day')
-            filenm = get_filename(data[nm], version, datadir, year)
+            var = atm.load_concat(files, nm, concat_dim='day')
+            filenm = get_filename(var, version, datadir, year)
             print('Saving to ' + filenm)
             var.to_dataset().to_netcdf(filenm)
             print('Deleting monthly files:')
             for filenm in files:
                 print(filenm)
                 os.remove(filenm)
-
-
-
-#
-#
-# def sector_and_zonal_mean(var, lon1=None, lon2=None, incl_global=True):
-#     """Return variable mean over sector and (optional) global zonal mean."""
-#     name = var.name
-#     # -- Sector mean
-#     varbar = atm.dim_mean(var, 'lon', lon1, lon2)
-#     varbar.name = name + '_' + 'SEC'
-#     varbar.attrs['varnm'] = name
-#     varbar.attrs['lonstr'] = atm.latlon_str(lon1, lon2, 'lon')
-#     # -- Global zonal mean
-#     if incl_global:
-#         varzon = atm.dim_mean(var, 'lon')
-#         varzon.name = name + '_' + 'ZON'
-#         varzon.attrs['varnm'] = name
-#         varzon.attrs['lonstr'] = atm.latlon_str(0, 360, 'lon')
-#         data_out = xray.Dataset({varzon.name : varzon, varbar.name: varbar})
-#     else:
-#         data_out = varbar
-#     return data_out
-
-#
-#
-#
-# def get_opts(version, plev, lon1, lon2, lat1, lat2, sector, sector_lon1,
-#              sector_lon2, dp):
-#     subset_dict, subset = {}, ''
-#     if plev is not None:
-#         subset = '%d' % plev + subset
-#         if dp:
-#             subset_dict['plev'] = (plev - 100, plev + 100)
-#         else:
-#             subset_dict['plev'] = (plev, plev)
-#     if sector:
-#         subset_dict = None
-#         func = sector_and_zonal_mean
-#         func_kw = {'lon1' : sector_lon1, 'lon2' : sector_lon2}
-#     else:
-#         subset_dict['lon'] = (lon1, lon2)
-#         subset_dict['lat'] = (lat1, lat2)
-#         for d1, d2, nm in zip([lon1, lat1], [lon2, lat2], ['lon', 'lat']):
-#             if d1 is not None:
-#                 subset = subset + '_' + atm.latlon_str(d1, d2, nm)
-#         if dp:
-#             func = var_and_dp
-#             func_kw = {'plev' : plev}
-#         else:
-#             func, func_kw = None, None
-#
-#     time_dim = {'merra' : 'TIME', 'merra2' : 'time'}[version]
-#     nc_fmt = {'merra' : None, 'merra2' : 'NETCDF4_classic'}[version]
-#     nc_eng = {'merra' : None, 'merra2' : 'netcdf4'}[version]
-#
-#     return subset_dict, subset, time_dim, nc_fmt, nc_eng, func, func_kw
-#
-#
-# opts = get_opts(version, plev, lon1, lon2, lat1, lat2, sector, sector_lon1,
-#                 sector_lon2, dp)
-# subset_dict, subset, time_dim, nc_fmt, nc_eng, func, func_kw = opts
