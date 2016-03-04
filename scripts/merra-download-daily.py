@@ -1,12 +1,25 @@
 """
-3-D variables - lat-lon subsets and sector means
-------------------------------------------------
-varnms = ['U', 'V', 'OMEGA', 'T', 'QV', 'H', 'DUDTANA']
+3-D variables:
+--------------
+Instantaneous:
+['U', 'V', 'OMEGA', 'T', 'QV', 'H']
 
-Surface fluxes and vertically integrated variables:
----------------------------------------------------
-varnms = ['PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'QLML', 'TLML', 'TQV',
-          'UFLXQV', 'VFLXQV', 'VFLXCPT', 'VFLXPHI', 'DQVDT_ANA', 'PS', 'SLP']
+Time-average:
+['DUDTANA']
+
+2-D variables:
+--------------
+Time-average surface fluxes:
+['PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'QLML', 'TLML']
+
+Time-average vertically integrated fluxes:
+['UFLXQV', 'VFLXQV', 'VFLXCPT', 'VFLXPHI']
+
+Instantaneous vertically integrated fluxes:
+['TQV']
+
+Single-level atmospheric variables:
+['PS', 'SLP']
 """
 
 import sys
@@ -30,22 +43,17 @@ import merra
 # version = 'merra'
 # years = np.arange(1979, 2016)
 version = 'merra2'
-# years = np.arange(1980, 2016)
-years = [1980, 1981]
+years = np.arange(1980, 2016)
 
 datadir = atm.homedir() + 'datastore/' + version + '/daily/'
 months = np.arange(1, 13)
 
-varnms = ['U', 'PRECTOT', 'V', 'TQV', 'EVAP', 'OMEGA']
-
-dp_vars = ['U', 'OMEGA']
+varnms = ['TQV', 'PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'TLML', 'QLML']
 
 latlon=(-90, 90, 40, 120)
 plevs=(850, 200)
 sector_lons=(60, 100)
-
-nc_fmt = {'merra' : None, 'merra2' : 'NETCDF4_classic'}[version]
-nc_eng = {'merra' : None, 'merra2' : 'netcdf4'}[version]
+dp_vars = ['U', 'OMEGA']
 
 
 def group_variables(varnms, version):
@@ -121,8 +129,13 @@ def sector_mean(var, lon1, lon2):
     """Return the sector mean of a variable."""
     name = var.name
     lonstr = atm.latlon_str(lon1, lon2, 'lon')
+    if (lon2 - lon1) == 360:
+        lon1, lon2 = None, None
+        name_out = name + '_ZON'
+    else:
+        name_out = name + '_SEC'
     varbar = atm.dim_mean(var, 'lon', lon1, lon2)
-    varbar.name = name + '_' + 'SEC'
+    varbar.name = name_out
     varbar.attrs['varnm'] = name
     varbar.attrs['lonstr'] = lonstr
     varbar.attrs['filestr'] = '%s_sector_%s' % (name, lonstr)
@@ -232,7 +245,8 @@ def get_url_dict(year, month, version, vargroups):
 vargroups = group_variables(varnms, version)
 calc_kw = {'latlon' : latlon, 'plevs' : plevs, 'dp_vars' : dp_vars,
            'sector_lons' : sector_lons}
-nc_kw = {'format' : nc_fmt, 'engine' : nc_eng}
+nc_kw = { 'merra2' : {'format' : 'NETCDF4_classic', 'engine' : 'netcdf4'},
+          'merra' : {'format' : None, 'engine' : None}}[version]
 
 # Read data and concatenate
 for year in years:
@@ -250,56 +264,12 @@ for year in years:
     for nm in dailyfiles:
         data = atm.load_concat(dailyfiles[nm], concat_dim='day')
         for varnm in data.data_vars:
-            filenm = get_filename(data[varnm], version, datadir, year)
+            var = data[varnm]
+            filenm = get_filename(var, version, datadir, year)
+            var.name = var.attrs.get('varnm', varnm)
             print('Saving to ' + filenm)
-            atm.save_nc(filenm, data[varnm])
-        print('Deleting daily files'):
+            atm.save_nc(filenm, var)
+        print('Deleting daily files')
         for filenm in dailyfiles[nm]:
             print(filenm)
             os.remove(filenm)
-
-
-
-# ----------------------------------------------------------------------
-# Read data and concatenate
-# for year in years:
-#     for varnm in varnms:
-#         for month in months:
-#             url_dict = merra.get_urls(year, month, version, varnm)
-#             days = range(1, atm.days_this_month(year, month) + 1)
-#             jdays = atm.season_days(atm.month_str(month), atm.isleap(year))
-#             urls = [url_dict['%d%02d%02d' % (year, month, day)] for day in days]
-#             func_kw = get_kw(jdays, latlon, plevs, sector_lons)
-#             data = atm.load_concat(urls, varnm, concat_dim='day', func=calc_data,
-#                                    func_kw=func_kw)
-#             if isinstance(data, xray.DataArray):
-#                 data = data.to_dataset()
-#
-#             # Save monthly files
-#
-#             for nm in data.data_vars:
-#                 var = data[nm]
-#                 filenm = get_filename(var, version, datadir, year, month)
-#
-#                 print('Saving to ' + filenm)
-#                 ds = var.to_dataset()
-#                 ds.to_netcdf(filenm, format=nc_fmt, engine=nc_eng)
-#
-#                 # Check if output is corrupted
-#                 with xray.open_dataset(filenm) as ds_check:
-#                     print(ds.dims.keys())
-#                     print(ds.data_vars.keys())
-#                     if len(ds.data_vars.keys()) > 1:
-#                         raise ValueError('Corrupted monthly output file')
-#
-#         # Consolidate monthly files into yearly files
-#         for nm in data.data_vars:
-#             files = [get_filename(data[nm], version, datadir, year, m) for m in months]
-#             var = atm.load_concat(files, nm, concat_dim='day')
-#             filenm = get_filename(var, version, datadir, year)
-#             print('Saving to ' + filenm)
-#             var.to_dataset().to_netcdf(filenm)
-#             print('Deleting monthly files:')
-#             for filenm in files:
-#                 print(filenm)
-#                 os.remove(filenm)
