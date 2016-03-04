@@ -44,6 +44,7 @@ version = 'merra'
 years = np.arange(1979, 2016)
 # version = 'merra2'
 # years = np.arange(1980, 2016)
+time_dim = 'TIME'
 
 datadir = atm.homedir() + 'datastore/' + version + '/monthly/'
 months = np.arange(1, 13)
@@ -56,13 +57,11 @@ nc_kw = { 'merra2' : {'format' : 'NETCDF4_classic', 'engine' : 'netcdf4'},
 
 for year in years:
     urls = merra.get_urls(year, version=version, varnm=varnms[0], monthly=True)
-    for month in months:
-        url = urls['%d%02d' % (year, month)]
-        print('Loading ' + url)
-        with xray.open_dataset(url) as ds:
-            for nm in varnms:
-                var = ds[nm]
-                filenm = '%s%s_%s_%d%02d.nc' % (datadir, version, nm, year,
-                                               month)
-                print('Saving to ' + filenm)
-                var.to_dataset().to_netcdf(filenm, **nc_kw)
+    urls = urls.values()
+    data = atm.load_concat(urls, varnms, concat_dim=concat_dim)
+    data = data.rename({concat_dim : 'month'})
+    data['month'].values = months
+    for nm in varnms:
+        filenm = '%s%s_%s_%d.nc' % (datadir, version, nm, year)
+        print('Saving to ' + filenm)
+        (data[nm]).to_dataset().to_netcdf(filenm, **nc_kw)
