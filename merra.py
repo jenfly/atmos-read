@@ -95,7 +95,8 @@ def scrape_url(url, ending='.hdf.html', cut='.html'):
         links.append(link.get('href'))
 
     links = list(set([s for s in links if s.endswith(ending)]))
-    links = [s.split(cut)[0] for s in links]
+    if cut is not None:
+        links = [s.split(cut)[0] for s in links]
     return links
 
 
@@ -108,7 +109,8 @@ def extract_date(filename, width, ending='.hdf'):
 
 
 # ----------------------------------------------------------------------
-def get_urls(years, months=None, version='merra', varnm='U', opts=None):
+def get_urls(years, months=None, version='merra', varnm='U', opts=None,
+             monthly=False):
     """Return dict of OpenDAP urls for MERRA and MERRA-2 daily data.
 
     Parameters
@@ -138,6 +140,9 @@ def get_urls(years, months=None, version='merra', varnm='U', opts=None):
                 Type of dataset: assimilated 3-d (ASM), atmospheric single-level
                 (SLV), surface turbulent fluxes (FLX), or surface and TOA
                 radiation fluxes (RAD).
+    monthly : bool, optional
+        If True, return urls for monthly data.  Otherwise return urls
+        for daily data.
 
     Returns
     -------
@@ -163,13 +168,16 @@ def get_urls(years, months=None, version='merra', varnm='U', opts=None):
         monthvals = atm.makelist(months)
     months = {m : '%02d' % m for m in monthvals}
 
-    urlstr = 'http://goldsmr%d.sci.gsfc.nasa.gov/opendap/%s'
-    servers = {'merra_X' : urlstr % (2, 'MERRA/MA'),
-               'merra' : urlstr % (3, 'MERRA/MA'),
-               'merra2_X' : urlstr % (4, 'MERRA2/M2'),
-               'merra2' : urlstr % (5, 'MERRA2/M2')}
+    urlstr = 'http://goldsmr%d.sci.gsfc.nasa.gov/opendap/%s/%s'
+    dirname = version.upper()
+    if monthly:
+        dirname = dirname + '_MONTHLY'
+    servers = {'merra_X' : urlstr % (2, dirname, 'MA'),
+               'merra' : urlstr % (3, dirname, 'MA'),
+               'merra2_X' : urlstr % (4, dirname, 'M2'),
+               'merra2' : urlstr % (5, dirname, 'M2')}
     version_num = {'merra' : '.5.2.0/', 'merra2' : '.5.12.4/'}
-    fmt = {'merra' : '.hdf', 'merra2' : '.nc4'}
+    fmts = {'merra' : '.hdf', 'merra2' : '.nc4'}
 
     if vertical == 'X':
         time_res = '1'
@@ -177,10 +185,13 @@ def get_urls(years, months=None, version='merra', varnm='U', opts=None):
     else:
         time_res = '3'
         server_key = version
+    if monthly:
+        time_res = 'M'
 
     try:
         basedir = servers[server_key]
         vnum = version_num[version]
+        fmt = fmts[version]
     except KeyError:
         raise ValueError('Invalid version %s.  Options are: merra, merra2.' %
                          version)
@@ -203,8 +214,25 @@ def get_urls(years, months=None, version='merra', varnm='U', opts=None):
                     url_dict[date] = dirname + nm
         return url_dict
 
+    # Helper function to make monthly urls
+    def monthly_urls(basedir, years, months, fmt):
+        url_dict = collections.OrderedDict()
+        for y in years:
+            dirname = basedir + years[y] + '/'
+            files = scrape_url(dirname, ending=fmt + '.html')
+            files.sort()
+            dates = [extract_date(nm, width=6, ending=fmt) for nm in files]
+            yr_dict = {date : nm for (date, nm) in zip(dates, files)}
+            for m in months:
+                date = years[y] + months[m]
+                url_dict[date] = yr_dict[date]
+        return url_dict
+
     # Extract urls
-    urls = daily_urls(basedir, years, months, fmt[version])
+    if monthly:
+        urls = monthly_urls(basedir, years, months, fmt)
+    else:
+        urls = daily_urls(basedir, years, months, fmt)
 
     return urls
 
