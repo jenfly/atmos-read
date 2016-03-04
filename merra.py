@@ -225,7 +225,7 @@ def get_urls(years, months=None, version='merra', varnm='U', opts=None,
             yr_dict = {date : nm for (date, nm) in zip(dates, files)}
             for m in months:
                 date = years[y] + months[m]
-                url_dict[date] = yr_dict[date]
+                url_dict[date] = dirname + yr_dict[date]
         return url_dict
 
     # Extract urls
