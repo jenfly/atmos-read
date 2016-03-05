@@ -58,8 +58,8 @@ nc_kw = { 'merra2' : {'format' : 'NETCDF4_classic', 'engine' : 'netcdf4'},
 for year in years:
     urls = merra.get_urls(year, version=version, varnm=varnms[0], monthly=True)
     urls = urls.values()
-    data = atm.load_concat(urls, varnms, concat_dim=concat_dim)
-    data = data.rename({concat_dim : 'month'})
+    data = atm.load_concat(urls, varnms, concat_dim=time_dim)
+    data = data.rename({time_dim : 'month'})
     data['month'].values = months
     for nm in varnms:
         filenm = '%s%s_%s_%d.nc' % (datadir, version, nm, year)

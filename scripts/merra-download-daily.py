@@ -40,20 +40,22 @@ import merra
 # ----------------------------------------------------------------------
 # Download daily data
 
-# version = 'merra'
-# years = np.arange(1979, 2016)
-version = 'merra2'
-years = np.arange(1980, 2016)
+version = 'merra'
+years = np.arange(1979, 1985)
+#version = 'merra2'
+#years = np.arange(1980, 2016)
 
 datadir = atm.homedir() + 'datastore/' + version + '/daily/'
 months = np.arange(1, 13)
 
-varnms = ['TQV', 'PRECTOT', 'EVAP', 'EFLUX', 'HFLUX', 'TLML', 'QLML']
+varnms = ['U', 'V', 'OMEGA']
 
 latlon=(-90, 90, 40, 120)
-plevs=(850, 200)
+plevs = [1000,925,850,775,700,600,500,400,300,250,200,150,100,70,50,30,20]
+#plevs=(850, 200)
 sector_lons=(60, 100)
-dp_vars = ['U', 'OMEGA']
+#dp_vars = ['U', 'OMEGA']
+dp_vars = []
 
 
 def group_variables(varnms, version):
@@ -90,6 +92,7 @@ def latlon_filestr(lat1, lat2, lon1, lon2):
 def latlon_data(var, lat1, lat2, lon1, lon2, plev=None):
     """Extract lat-lon subset of data."""
     name = var.name
+    varnm = name
     subset_dict = {'lat' : (lat1, lat2), 'lon' : (lon1, lon2)}
     latlonstr = latlon_filestr(lat1, lat2, lon1, lon2)
     if plev is not None:
@@ -98,6 +101,7 @@ def latlon_data(var, lat1, lat2, lon1, lon2, plev=None):
     var = atm.subset(var, subset_dict, copy=False, squeeze=True)
     var.name = name
     var.attrs['filestr'] = '%s_%s' % (name, latlonstr)
+    var.attrs['varnm'] = varnm
     return var
 
 def pgradient(var, lat1, lat2, lon1, lon2, plev):
@@ -115,13 +119,15 @@ def pgradient(var, lat1, lat2, lon1, lon2, plev):
     dvar_dp = atm.gradient(var, pres, axis=pdim)
     dvar_dp = atm.subset(dvar_dp, {pname : (plev, plev)}, copy=False,
                          squeeze=True)
-    name = 'D%sDP%d' % (var.name, plev)
+    varnm = 'D%sDP' % var.name
+    name = '%s%d' % (varnm, plev)
     dvar_dp.name = name
     attrs['long_name'] = 'd/dp of ' + var.attrs['long_name']
     attrs['standard_name'] = 'd/dp of ' + var.attrs['standard_name']
     attrs['units'] = ('(%s)/Pa' % attrs['units'])
     attrs[pname] = plev
     attrs['filestr'] = '%s_%s' % (name, latlonstr)
+    attrs['varnm'] = varnm
     dvar_dp.attrs = attrs
     return dvar_dp
 
