@@ -41,7 +41,7 @@ import merra
 # Download daily data
 
 version = 'merra'
-years = np.arange(1979, 1985)
+years = [1982, 1983, 1984, 1992, 1993, 1994, 1995]
 #version = 'merra2'
 #years = np.arange(1980, 2016)
 
@@ -200,6 +200,7 @@ def all_data(ds, varnms, datadir, year, month, day, jday, calc_kw, nc_kw):
         data = var_calcs(ds[nm], jday, **calc_kw)
         filenm = '%s%s_%d%02d%02d.nc' % (datadir, nm, year, month, day)
         print('Saving to ' + filenm)
+        atm.disptime()
         data.to_netcdf(filenm, **nc_kw)
         files[nm] = filenm
     return files
