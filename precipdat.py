@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import atmos as atm
 
-def read_cmap(datafile, yearmin=None, yearmax=None):
+# ----------------------------------------------------------------------
+def read_cmap(datafile, yearmin=None, yearmax=None, pentad_day=3):
     """Read CMAP pentad data for selected years.
 
     Parameters
@@ -26,6 +27,8 @@ def read_cmap(datafile, yearmin=None, yearmax=None):
         File path for CMAP data in NetCDF format.
     yearmin, yearmax : ints, optional
         Min and max years (inclusive) to extract.
+    pentad_day : int, optional
+        Which day of pentad to use for day coordinate.
 
     Returns
     -------
@@ -61,5 +64,8 @@ def read_cmap(datafile, yearmin=None, yearmax=None):
     else:
         years = np.arange(yearmin, yearmax + 1)
     precip = precip.sel(year=years)
+    precip.coords['day'] = atm.pentad_to_jday(precip['pentad'], pmin=1,
+                                              day=pentad_day)
 
+    precip = precip.swap_dims({'pentad' : 'day'})
     return precip

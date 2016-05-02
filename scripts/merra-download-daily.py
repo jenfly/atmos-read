@@ -41,14 +41,14 @@ import merra
 # Download daily data
 
 version = 'merra'
-years = [1982, 1983, 1984, 1992, 1993, 1994, 1995]
+years = range(1979, 1986)
 #version = 'merra2'
 #years = np.arange(1980, 2016)
 
 datadir = atm.homedir() + 'datastore/' + version + '/daily/'
 months = np.arange(1, 13)
 
-varnms = ['U', 'V', 'OMEGA']
+varnms = ['QLML', 'TLML', 'UFLXCPT', 'UFLXPHI']
 
 latlon=(-90, 90, 40, 120)
 plevs = [1000,925,850,775,700,600,500,400,300,250,200,150,100,70,50,30,20]
