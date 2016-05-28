@@ -18,6 +18,36 @@ import pandas as pd
 import atmos as atm
 
 # ----------------------------------------------------------------------
+def save_gpcp_years(datafile, savedir, yearmin=1997, yearmax=2015):
+    """Read GPCP daily data and save to individual file for each year."""
+
+    savestr = savedir + '/gpcp_daily_%d.nc'
+
+    with xray.open_dataset(datafile) as ds:
+        pcp = ds['PREC']
+        dates = ds['yyyyddd']
+        yy = dates // 1000
+        ddd = dates - 1000 * yy
+        pcp.coords['year'] = yy
+        pcp.coords['day'] = ddd
+
+        years = np.arange(yearmin, yearmax + 1)
+        for year in years:
+            print(year)
+            ind = np.where(yy.values == year)[0]
+            precip = pcp[ind]
+            days = precip['day'].values
+            precip = precip.drop(['year', 'day'])
+            precip = precip.rename({'time' : 'day'})
+            precip['day'] = days
+            savefile = savestr % year
+            print('Saving to ' + savefile)
+            atm.save_nc(savefile, precip)
+
+    return None
+
+
+# ----------------------------------------------------------------------
 def read_cmap(datafile, yearmin=None, yearmax=None, pentad_day=3):
     """Read CMAP pentad data for selected years.
 
