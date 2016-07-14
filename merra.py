@@ -60,7 +60,8 @@ def url_opts(var_id, version='merra'):
                'flx_t' : ('X', 'N', 'T', 'FLX'),
                'slv_t' : ('X', 'N', 'T', 'SLV'),
                'asm_i' : ('P', p_res, 'I', 'ASM'),
-               'udt_t' : ('P', p_res, 'T', 'UDT')}
+               'udt_t' : ('P', p_res, 'T', 'UDT'),
+               'rad_t' : ('X', 'N', 'T', 'RAD')}
 
     optkeys = {}
     for nm in ['UFLXQV', 'VFLXQV', 'UFLXCPT', 'VFLXCPT', 'UFLXPHI', 'VFLXPHI',
@@ -77,7 +78,24 @@ def url_opts(var_id, version='merra'):
         optkeys[nm] = 'asm_i'
     for nm in ['DUDTANA', 'DVDTANA']:
         optkeys[nm] = 'udt_t'
-
+    for nm in [u'Var_ALBNIRDF', u'Var_SWTNTCLN', u'Var_TAUTOT', u'LWGAB',
+               u'CLDTOT', u'Var_ALBNIRDR', u'Var_LWTUPCLR', u'ALBNIRDF',
+               u'Var_LWGNT', u'SWTDN', u'EMIS', u'LWTUPCLRCLN', u'SWTNTCLR',
+               u'CLDHGH', u'Var_LWTUPCLRCLN', u'Var_SWTNTCLRCLN',
+               u'Var_LWGNTCLRCLN', u'Var_SWGNTCLRCLN', u'Var_TAULOW',
+               u'LWGABCLR', u'Var_ALBVISDF', u'LWGABCLRCLN', u'Var_ALBVISDR',
+               u'Var_TAUHGH', u'Var_SWGDNCLR', u'Var_SWTDN', u'LWGNTCLRCLN',
+               u'Var_CLDLOW', u'SWGNTCLRCLN', u'Var_LWGABCLR', u'Var_CLDTOT',
+               u'TS', u'SWGNT', u'TAUMID', u'ALBEDO', u'SWGNTCLR', u'SWGNTCLN',
+               u'LWGNTCLR', u'Var_ALBEDO', u'SWGDNCLR', u'ALBVISDF',
+               u'LWTUPCLR', u'TAUTOT', u'LWGNT', u'CLDLOW', u'ALBVISDR',
+               u'Var_CLDMID', u'Var_LWGNTCLR', u'SWTNTCLRCLN', u'TAUHGH',
+               u'TAULOW', u'Var_LWGEM', u'Var_SWGNTCLN', u'Var_TAUMID',
+               u'Var_SWTNT', u'Var_SWGNT', u'Var_LWTUP', u'Var_SWTNTCLR',
+               u'Var_SWGNTCLR', u'SWGDN', u'Var_LWGAB', u'LWGEM', u'Var_CLDHGH',
+               u'CLDMID', u'Var_EMIS', u'SWTNTCLN', u'ALBNIRDR', u'Var_SWGDN',
+               u'SWTNT', u'LWTUP', u'Var_LWGABCLRCLN', u'Var_TS']:
+        optkeys[nm] = 'rad_t'
     vertical, res, time_kind, kind = optlist[optkeys[varnm]]
     opts = {'version' : version, 'vertical' : vertical, 'res' : res,
             'time_kind' : time_kind, 'kind' : kind}
