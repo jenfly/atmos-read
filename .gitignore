@@ -5,4 +5,4 @@ testing/log
 scripts/log
 *.o*
 fram
-.idea
+.idea/*
