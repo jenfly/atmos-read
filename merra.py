@@ -8,7 +8,7 @@ Convention for function names
 
 from __future__ import division
 import numpy as np
-import xray
+import xarray as xray
 import collections
 import os
 import pandas as pd

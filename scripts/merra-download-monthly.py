@@ -27,7 +27,7 @@ sys.path.append('/home/jwalker/dynamics/python/atmos-tools')
 sys.path.append('/home/jwalker/dynamics/python/atmos-read')
 
 import os
-import xray
+import xarray as xray
 import numpy as np
 import collections
 import time

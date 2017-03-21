@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import xray
+import xarray as xray
 import collections
 import pandas as pd
 import urllib2

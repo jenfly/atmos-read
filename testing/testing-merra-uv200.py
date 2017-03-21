@@ -5,7 +5,7 @@ sys.path.append('/home/jwalker/dynamics/python/atmos-read')
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import xray
+import xarray as xray
 import merra
 import atmos as atm
 
