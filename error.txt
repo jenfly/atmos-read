@@ -1,0 +1,23 @@
+[jwalker@eady atmos-read]$ wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies http://goldsmr4.sci.gsfc.nasa.gov/opendap/hyrax/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198001.nc4
+
+--2016-11-06 19:12:58--  http://goldsmr4.sci.gsfc.nasa.gov/opendap/hyrax/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198001.nc4
+Resolving goldsmr4.sci.gsfc.nasa.gov... 198.118.197.95, 2001:4d0:241a:4041::95
+Connecting to goldsmr4.sci.gsfc.nasa.gov|198.118.197.95|:80... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://urs.earthdata.nasa.gov/oauth/authorize/?scope=uid&app_type=401&client_id=e2WVk8Pw6weeLUKZYOxvTQ&response_type=code&redirect_uri=http%3A%2F%2Fgoldsmr4.gesdisc.eosdis.nasa.gov%2Fdata-redirect&state=aHR0cDovL2dvbGRzbXI0LnNjaS5nc2ZjLm5hc2EuZ292L29wZW5kYXAvaHlyYXgvTUVSUkEyX01PTlRITFkvTTJUTU5YRkxYLjUuMTIuNC8xOTgwL01FUlJBMl8xMDAudGF2Z01fMmRfZmx4X054LjE5ODAwMS5uYzQ [following]
+--2016-11-06 19:12:58--  https://urs.earthdata.nasa.gov/oauth/authorize/?scope=uid&app_type=401&client_id=e2WVk8Pw6weeLUKZYOxvTQ&response_type=code&redirect_uri=http%3A%2F%2Fgoldsmr4.gesdisc.eosdis.nasa.gov%2Fdata-redirect&state=aHR0cDovL2dvbGRzbXI0LnNjaS5nc2ZjLm5hc2EuZ292L29wZW5kYXAvaHlyYXgvTUVSUkEyX01PTlRITFkvTTJUTU5YRkxYLjUuMTIuNC8xOTgwL01FUlJBMl8xMDAudGF2Z01fMmRfZmx4X054LjE5ODAwMS5uYzQ
+Resolving urs.earthdata.nasa.gov... 198.118.243.33, 2001:4d0:241a:4081::89
+Connecting to urs.earthdata.nasa.gov|198.118.243.33|:443... connected.
+HTTP request sent, awaiting response... 401 Unauthorized
+Connecting to urs.earthdata.nasa.gov|198.118.243.33|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: http://goldsmr4.gesdisc.eosdis.nasa.gov/data-redirect?code=3c86d22b17dc422a98b86c44a70870e04e39d7dd71455bc427d0b58f19e72b1e&state=aHR0cDovL2dvbGRzbXI0LnNjaS5nc2ZjLm5hc2EuZ292L29wZW5kYXAvaHlyYXgvTUVSUkEyX01PTlRITFkvTTJUTU5YRkxYLjUuMTIuNC8xOTgwL01FUlJBMl8xMDAudGF2Z01fMmRfZmx4X054LjE5ODAwMS5uYzQ [following]
+--2016-11-06 19:12:59--  http://goldsmr4.gesdisc.eosdis.nasa.gov/data-redirect?code=3c86d22b17dc422a98b86c44a70870e04e39d7dd71455bc427d0b58f19e72b1e&state=aHR0cDovL2dvbGRzbXI0LnNjaS5nc2ZjLm5hc2EuZ292L29wZW5kYXAvaHlyYXgvTUVSUkEyX01PTlRITFkvTTJUTU5YRkxYLjUuMTIuNC8xOTgwL01FUlJBMl8xMDAudGF2Z01fMmRfZmx4X054LjE5ODAwMS5uYzQ
+Resolving goldsmr4.gesdisc.eosdis.nasa.gov... 198.118.197.95, 2001:4d0:241a:4041::95
+Connecting to goldsmr4.gesdisc.eosdis.nasa.gov|198.118.197.95|:80... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: http://goldsmr4.sci.gsfc.nasa.gov/opendap/hyrax/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198001.nc4 [following]
+--2016-11-06 19:13:00--  http://goldsmr4.sci.gsfc.nasa.gov/opendap/hyrax/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198001.nc4
+Connecting to goldsmr4.sci.gsfc.nasa.gov|198.118.197.95|:80... connected.
+HTTP request sent, awaiting response... 403 Forbidden
+2016-11-06 19:13:01 ERROR 403: Forbidden.

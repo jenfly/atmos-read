@@ -1,0 +1,12 @@
+--2016-11-07 09:50:41--  http://goldsmr4.sci.gsfc.nasa.gov/opendap/hyrax/MERRA2_MONTHLY/M2TMNXRAD.5.12.4/1998/MERRA2_200.tavgM_2d_rad_Nx.199807.nc4.nc4
+Resolving goldsmr4.sci.gsfc.nasa.gov... 198.118.197.95, 2001:4d0:241a:4041::95
+Connecting to goldsmr4.sci.gsfc.nasa.gov|198.118.197.95|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [application/x-netcdf]
+Saving to: “MERRA2_200.tavgM_2d_rad_Nx.199807.nc4.nc4”
+
+    [           <=>                                                    ] 21,970,456  30.8K/s                  [            <=>                                                   ] 22,016,336  30.8K/s                  [             <=>                                                  ] 22,114,800  30.9K/s                  [              <=>                                                 ] 22,269,736  31.1K/s                  [               <=>                                                ] 22,527,480  31.5K/s                  [                <=>                                               ] 22,931,472  32.0K/s                  [                 <=>                                              ] 23,562,800  32.9K/s                  [                  <=>                                             ] 24,605,360  34.3K/s                  [                   <=>                                            ] 26,996,008  37.5K/s                  [                    <=>                                           ] 28,206,536  39.2K/s   in 11m 40s 
+
+utime(MERRA2_200.tavgM_2d_rad_Nx.199807.nc4.nc4): No such file or directory
+2016-11-07 10:02:26 (39.4 KB/s) - “MERRA2_200.tavgM_2d_rad_Nx.199807.nc4.nc4” saved [28206536]
+
