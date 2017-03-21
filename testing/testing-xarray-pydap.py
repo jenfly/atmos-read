@@ -11,4 +11,6 @@ import atmos as atm
 
 url = 'http://iridl.ldeo.columbia.edu/SOURCES/.OSU/.PRISM/.monthly/dods'
 
-dsx = xray.open_dataset(url)
+ds = xray.open_dataset(url, decode_times=False, engine='pydap')
+
+ds2 = pydap.client.open_url(url)
