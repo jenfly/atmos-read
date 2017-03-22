@@ -15,7 +15,7 @@ years = np.arange(1980, 2016)
 datadir = atm.homedir() + 'datastore/' + version + '/daily/'
 months = np.arange(1, 13)
 
-varnms = ['U', 'DUDP', 'OMEGA', 'DOMEGADP', 'V', 'H']
+varnms = ['U', 'DUDP', 'OMEGA', 'DOMEGADP', 'V', 'H', 'DUDTANA']
 
 latlonstr = '40E-120E_90S-90N'
 plevs = [1000,925,850,775,700,600,500,400,300,250,200,150,100,70,50,30,20]
