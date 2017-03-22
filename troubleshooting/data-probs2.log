@@ -1,0 +1,3 @@
+filename, year, varnm, plev, jday, yyyymmdd
+/home/jwalker/datastore/merra2/daily/1984/merra2_DUDTANA200_40E-120E_90S-90N_1984.nc, 1984, DUDTANA, 200, 188, 19840706
+/home/jwalker/datastore/merra2/daily/1995/merra2_DUDTANA1000_40E-120E_90S-90N_1995.nc, 1995, DUDTANA, 1000, 333, 19951129
