@@ -29,6 +29,14 @@ def get_login(netrc_file):
 
 auth = get_login(netrc_file)
 
-session = setup_session(auth['username'], auth['password'])
+session = setup_session(auth['username'], auth['password'], check_url=url)
+session2 = setup_session(auth['username'], auth['password'], check_url=url2)
 ds = open_url(url, session=session)
-ds2 = open_url(url2, session=session)
+ds2 = open_url(url2, session=session2)
+
+
+print(ds['T'].shape)
+print(ds['T'][0, 0, 0, 0])
+print(ds2['TS'].shape)
+print(ds2['TS'][0, 0, 0])
+
