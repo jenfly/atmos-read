@@ -24,7 +24,7 @@ url_pres = ('http://goldsmr5.gesdisc.eosdis.nasa.gov/daac-bin/OTF/'
             'MERRA2_200.inst3_3d_asm_Np.19970610.SUB.nc4&FLAGS=1&'
             'SHORTNAME=M2I3NPASM&SERVICE=SUBSET_MERRA2&LAYERS='
             'LAYER_1%2C4%2C7%2C10%2C13%2C15%2C17%2C19%2C21%2C22%2C23%2C24%2C25'
-            '%2C26%2C27%2C29%2C30&VERSION=1.02&VARIABLES=omega%2Ct%2Cu%2Cv')
+            '%2C26%2C27%2C29%2C30&VERSION=1.02&VARIABLES=omega%2Ch%2Cu%2Cv')
 
 def get_url(year, mon, day, lat1='-65', lat2='65', lon1='40', lon2='120'):
     yrstr = '%d' % year
