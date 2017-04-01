@@ -18,9 +18,15 @@ import precipdat
 import merra
 
 # ----------------------------------------------------------------------
-datalist = 'troubleshooting/data-probs.log'
-probdata = pd.read_csv(datalist, skipinitialspace=True)
+datadir = '/net/eady/data1/jwalker/datastore/merra2/wget'
+probdata = pd.read_csv('scripts/merra_urls/merge_data.csv')
 
+# For each corrupted data file:
+# - load the corrupted data file
+# - load the new downloaded file for the problem day
+# - calculate d/dp and other stuff
+# - merge the data for the affected day
+# - save into data file for the year
 
 
 
