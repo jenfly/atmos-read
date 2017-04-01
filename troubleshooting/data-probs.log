@@ -1,8 +1,10 @@
 filename, year, varnm, plev, jday, yyyymmdd
+/home/jwalker/datastore/merra2/daily/1984/merra2_DUDTANA200_40E-120E_90S-90N_1984.nc, 1984, DUDTANA, 200, 188, 19840706
 /home/jwalker/datastore/merra2/daily/1986/merra2_U850_40E-120E_90S-90N_1986.nc, 1986, U, 850, 358, 19861224
 /home/jwalker/datastore/merra2/daily/1986/merra2_DUDP925_40E-120E_90S-90N_1986.nc, 1986, DUDP, 925, 358, 19861224
 /home/jwalker/datastore/merra2/daily/1986/merra2_DUDP775_40E-120E_90S-90N_1986.nc, 1986, DUDP, 775, 358, 19861224
 /home/jwalker/datastore/merra2/daily/1995/merra2_V300_40E-120E_90S-90N_1995.nc, 1995, V, 300, 155, 19950604
+/home/jwalker/datastore/merra2/daily/1995/merra2_DUDTANA1000_40E-120E_90S-90N_1995.nc, 1995, DUDTANA, 1000, 333, 19951129
 /home/jwalker/datastore/merra2/daily/1997/merra2_U1000_40E-120E_90S-90N_1997.nc, 1997, U, 1000, 273, 19970930
 /home/jwalker/datastore/merra2/daily/1997/merra2_DUDP1000_40E-120E_90S-90N_1997.nc, 1997, DUDP, 1000, 273, 19970930
 /home/jwalker/datastore/merra2/daily/1997/merra2_DUDP925_40E-120E_90S-90N_1997.nc, 1997, DUDP, 925, 273, 19970930
