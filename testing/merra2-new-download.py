@@ -46,9 +46,9 @@ print(ds_2d['TS'][0, 0, 0])
 
 #url = 'http://iridl.ldeo.columbia.edu/SOURCES/.OSU/.PRISM/.monthly/dods'
 url = 'http://test.opendap.org/dap/data/nc/coads_climatology.nc'
-ds = xray.open_dataset(url, engine='pydap', decode_times=False)
+ds = xray.open_dataset(url, engine='pydap', decode_times=False, decode_coords=False)
 
 url3 = url_3d
 session = setup_session(username, password, check_url=url3)
 store = xray.backends.PydapDataStore(url3, session=session)
-ds = xray.open_dataset(store, decode_times=False, decode_coords=False)
+ds3 = xray.open_dataset(store, decode_times=False, decode_coords=False)
