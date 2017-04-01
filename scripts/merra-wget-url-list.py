@@ -14,6 +14,7 @@ import atmos as atm
 datalist = 'troubleshooting/data-probs.log'
 probdata = pd.read_csv(datalist, skipinitialspace=True)
 savefile = 'scripts/merra_urls/merra_urls_ubudget.txt'
+savefile2 = 'scripts/merra_urls/merge_data.csv'
 
 def get_prodnum(year):
     prod_dict = {yr: '100' for yr in range(1980, 1992)}
@@ -53,6 +54,7 @@ def get_url(year, mon, day, ana=False, lat1=-90, lat2=90, lon1=40, lon2=120):
     box = ('&FORMAT=bmM0Lw&BBOX=' + str(lat1) + sep + str(lon1) + sep + str(lat2)
            + sep + str(lon2))
     label = '&LABEL=' + longname + '.SUB.nc4'
+    datfile = longname + '.SUB.nc4'
     layers = ('&LAYERS=' + 'LAYER_1%2C4%2C7%2C10%2C13%2C15%2C17%2C19'
               '%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C29%2C30')
 
@@ -60,9 +62,10 @@ def get_url(year, mon, day, ana=False, lat1=-90, lat2=90, lon1=40, lon2=120):
            + '&FLAGS=1&SHORTNAME=' + shortname + '&SERVICE=SUBSET_MERRA2' + layers
            +'&VERSION=1.02' + variables)
 
-    return url
+    return url, datfile
 
 url_list = []
+probdata['datfile'] = ''
 
 for i in range(len(probdata)):
     varnm = probdata['varnm'][i]
@@ -74,7 +77,8 @@ for i in range(len(probdata)):
     jday = probdata['jday'][i]
     mon, day = atm.jday_to_mmdd(jday, year)
     #print(probdata['yyyymmdd'][i], year, mon, day, varnm, ana)
-    url = get_url(year, mon, day, ana)
+    url, datfile = get_url(year, mon, day, ana)
+    probdata['datfile'][i] = datfile
     if url not in url_list:
         url_list.append(url)
 
@@ -82,6 +86,9 @@ print('Writing url list to ' + savefile)
 with open(savefile, 'w') as f:
     for url in url_list:
         f.write(url + '\n')
+
+print('Writing data merge info to ' + savefile2)
+probdata.to_csv(savefile2)
 
 # url_ana = ('http://goldsmr5.gesdisc.eosdis.nasa.gov/daac-bin/OTF/HTTP_services.cgi?' +
 #            'FILENAME=%2Fdata%2FMERRA2%2FM2T3NPUDT.5.12.4%2F1997%2F07%2F' +
