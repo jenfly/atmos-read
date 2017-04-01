@@ -13,7 +13,7 @@ import atmos as atm
 
 datalist = 'troubleshooting/data-probs.log'
 probdata = pd.read_csv(datalist, skipinitialspace=True)
-savefile = 'merra_urls/merra_urls_ubudget.txt'
+savefile = 'scripts/merra_urls/merra_urls_ubudget.txt'
 
 def get_prodnum(year):
     prod_dict = {yr: '100' for yr in range(1980, 1992)}
