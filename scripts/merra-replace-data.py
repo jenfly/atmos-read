@@ -138,3 +138,23 @@ for i, row in probdata.iterrows():
     data = process_row(row, datadir, savedir)
 
 
+# Plot data to check
+def plot_data(probdata, savedir, i):
+    row = probdata.iloc[i]
+    filenm = row['filename']
+    filenm = savedir + os.path.split(filenm)[1]
+    jday = row['jday']
+    varnm = row['varnm']
+    with xray.open_dataset(filenm) as ds:
+        var = ds[varnm].load()
+    plt.figure(figsize=(16, 8))
+    plt.suptitle(os.path.split(filenm)[1])
+    plt.subplot(1, 3, 1)
+    atm.pcolor_latlon(var.sel(day=(jday-1)))
+    plt.title(jday - 1)
+    plt.subplot(1, 3, 2)
+    atm.pcolor_latlon(var.sel(day=jday))
+    plt.title(jday)
+    plt.subplot(1, 3, 3)
+    atm.pcolor_latlon(var.sel(day=(jday+1)))
+    plt.title(jday + 1)
