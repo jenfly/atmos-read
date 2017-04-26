@@ -6,8 +6,8 @@ import xarray as xray
 import numpy as np
 import atmos as atm
 
-filenm1 = 'troubleshooting/data-check.log'
-filenm2 = 'troubleshooting/data-probs.log'
+filenm1 = 'troubleshooting/data-check2.log'
+filenm2 = 'troubleshooting/data-probs2.log'
 
 version = 'merra2'
 years = np.arange(1980, 2016)
@@ -15,15 +15,20 @@ years = np.arange(1980, 2016)
 datadir = atm.homedir() + 'datastore/' + version + '/daily/'
 months = np.arange(1, 13)
 
-varnms = ['U', 'DUDP', 'OMEGA', 'DOMEGADP', 'V', 'H', 'DUDTANA']
+#varnms = ['U', 'DUDP', 'OMEGA', 'DOMEGADP', 'V', 'H', 'DUDTANA']
+#plevs = [1000,925,850,775,700,600,500,400,300,250,200,150,100,70,50,30,20]
+varnms = ['TLML', 'QLML']
+plevs = [None]
 
 latlonstr = '40E-120E_90S-90N'
-plevs = [1000,925,850,775,700,600,500,400,300,250,200,150,100,70,50,30,20]
-
 
 def get_filename(year, varnm, plev, datadir, version, latlonstr):
-    filenm = ('%s%d/%s_%s%d_%s_%d.nc' %
-              (datadir, year, version, varnm, plev, latlonstr, year))
+    if plev is None:
+        nm = varnm
+    else:
+        nm = '%s%d' % (varnm, plev)
+    filenm = ('%s%d/%s_%s_%s_%d.nc' %
+              (datadir, year, version, nm, latlonstr, year))
     return filenm
 
 
@@ -47,7 +52,9 @@ def initialize_logs(filenm1, filenm2):
 
 
 def write_logs(filenm1, filenm2, datafile, year, varnm, plev, problem_days):
-    s = '%s, %d, %s, %d' % (datafile, year, varnm, plev)
+    s = '%s, %d, %s' % (datafile, year, varnm)
+    if plev is not None:
+        s = s + ', %d' % plev
     if len(problem_days) == 0:
         with open(filenm1, 'a') as f1:
             f1.write(s + ' OK\n')
