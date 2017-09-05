@@ -2,8 +2,16 @@
 
 
 cd /net/eady/data1/jwalker/datastore/merra2/wget
-filenm=/net/eady/data1/jwalker/dynamics/python/atmos-read/scripts/merra_urls/merra_urls_ubudget.txt
-wget  --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookie --no-check-certificate --content-disposition -i $filenm
+dirname=/net/eady/data1/jwalker/dynamics/python/atmos-read/scripts/merra_urls
+
+for yr in {1980..2015}
+do
+   mkdir $yr
+   cd $yr
+   filenm=${dirname}/merra2_int_$yr.txt
+   wget  --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookie --no-check-certificate --content-disposition -i $filenm
+   cd ..
+done
 
 # ------------------------------
 #cd /home/jwalker/datastore/merra2/dailyrad/
